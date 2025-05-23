@@ -97,32 +97,32 @@ const Footer = () => {
   };
 
   return (
-    <footer style={{ borderTop: '1px solid #eaeaea', padding: '2rem 1rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: '2rem', flexWrap: 'wrap' }}>
+    <footer className='border-t py-8'>
+      <div className='flex justify-around mb-8 flex-wrap'>
         {/* Column 1: Archives */}
-        <div style={{ flex: 1, minWidth: '200px', marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Archives</h3>
+        <div className='flex-1 min-w-[200px] mb-4'>
+          <h3 className='text-lg mb-2'>Archives</h3>
           {loading ? (
-            <p style={{ fontSize: '0.9rem', color: '#555' }}>Loading archives...</p>
+            <p className='text-sm'>Loading archives...</p>
           ) : archiveData.size === 0 ? (
-            <p style={{ fontSize: '0.9rem', color: '#555' }}>No archives available.</p>
+            <p className='text-sm'>No archives available.</p>
           ) : (
-            <ul style={{ listStyle: 'none', padding: 0, fontSize: '0.9rem' }}>
+            <ul className='list-none p-0 text-sm'>
               {Array.from(archiveData.keys()).sort((a, b) => b.localeCompare(a)).map(year => (
-                <li key={year} style={{ marginBottom: '0.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => toggleYear(year)}>
-                    <span style={{ marginRight: '0.5rem', width: '10px' }}>
+                <li key={year} className='mb-2'>
+                  <div className='flex items-center cursor-pointer' onClick={() => toggleYear(year)}>
+                    <span className='mr-2 w-2'>
                       {expandedYears.has(year) ? '▼' : '▶'}
                     </span>
-                    <Link href={`/archives/${year}`} style={{ textDecoration: 'none', color: '#0070f3', fontWeight: 'bold' }}>
+                    <Link href={`/archives/${year}`} className='no-underline font-bold'>
                       {year}
                     </Link>
                   </div>
                   {expandedYears.has(year) && (
-                    <ul style={{ listStyle: 'none', paddingLeft: '1.5rem', marginTop: '0.25rem' }}>
+                    <ul className='list-none pl-6 mt-1'>
                       {archiveData.get(year)?.map(month => (
-                        <li key={month} style={{ marginBottom: '0.25rem' }}>
-                          <Link href={`/archives/${year}/${month}`} style={{ textDecoration: 'none', color: '#333' }}>
+                        <li key={month} className='mb-1'>
+                          <Link href={`/archives/${year}/${month}`} className='no-underline'>
                             {getMonthName(month)} ({month})
                           </Link>
                         </li>
@@ -136,19 +136,19 @@ const Footer = () => {
         </div>
 
         {/* Column 2: Categories */}
-        <div style={{ flex: 1, minWidth: '200px', marginLeft: '1rem', marginRight: '1rem', marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Categories</h3>
+        <div className='flex-1 min-w-[200px] ml-4 mr-4 mb-4'>
+          <h3 className='text-lg mb-2'>Categories</h3>
           {loading ? (
-            <p style={{ fontSize: '0.9rem', color: '#555' }}>Loading categories...</p>
+            <p className='text-sm'>Loading categories...</p>
           ) : categories.length === 0 ? (
-            <p style={{ fontSize: '0.9rem', color: '#555' }}>No categories available.</p>
+            <p className='text-sm'>No categories available.</p>
           ) : (
-            <ul style={{ listStyle: 'none', padding: 0, fontSize: '0.9rem' }}>
+            <ul className='list-none p-0 text-sm'>
               {categories.map(category => (
-                <li key={category} style={{ marginBottom: '0.25rem' }}>
+                <li key={category} className='mb-1'>
                   <Link 
                     href={`/categories/${encodeURIComponent(category.toLowerCase())}`} 
-                    style={{ textDecoration: 'none', color: '#333' }}
+                    className='no-underline'
                   >
                     {/* Display original category name, e.g., "Web Development" */}
                     {category.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
@@ -160,13 +160,13 @@ const Footer = () => {
         </div>
 
         {/* Column 3: Search */}
-        <div style={{ flex: 1, minWidth: '200px', marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Search</h3>
+        <div className='flex-1 min-w-[200px] mb-4'>
+          <h3 className='text-lg mb-2'>Search</h3>
           <SearchBox />
         </div>
       </div>
-      <div style={{ textAlign: 'center', fontSize: '0.9rem', color: '#777' }}>
-        © {currentYear} 西田明正のブログ
+      <div className='text-center text-sm'>
+        © {currentYear} 西田明正 (Akimasa NISHIDA).
       </div>
     </footer>
   );

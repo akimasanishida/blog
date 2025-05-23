@@ -8,7 +8,7 @@ interface CategoryPageProps {
   };
 }
 
-const CategoryPage: React.FC<CategoryPageProps> = ({ params }) => {
+const CategoryPage: React.FC<CategoryPageProps> = async ({ params }) => {
   // Decode the category name from the URL (e.g., "Web%20Development" -> "Web Development")
   const decodedCategory = decodeURIComponent(params.category);
 

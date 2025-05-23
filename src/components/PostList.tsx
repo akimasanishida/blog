@@ -15,7 +15,7 @@ const PostList: React.FC<PostListProps> = ({ posts }) => {
       {posts.map((post) => (
         <li key={post.slug} style={{ marginBottom: '2rem', paddingBottom: '1rem', borderBottom: '1px solid #eee' }}>
           <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>
-            <Link href={`/posts/${post.slug}`} style={{ textDecoration: 'none', color: '#0070f3' }}>
+            <Link href={`/posts/${post.slug}`} className='link-no-underline'>
               {post.title}
             </Link>
           </h2>

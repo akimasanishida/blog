@@ -1,27 +1,31 @@
 import Link from 'next/link';
+import { ModeToggle } from './ModeToggle';
 
 const Header = () => {
   return (
-    <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderBottom: '1px solid #eaeaea' }}>
+    <header className="flex justify-between items-center p-4 border-b border-gray-200">
       <div>
-        <Link href="/" style={{ textDecoration: 'none', color: 'inherit', fontSize: '1.5rem' }}>
+        <Link href="/" className="text-2xl !text-[var(--foreground)] link-no-underline font-bold">
           西田明正のブログ
         </Link>
       </div>
       <nav>
-        <ul style={{ listStyle: 'none', display: 'flex', margin: 0, padding: 0 }}>
-          <li style={{ marginRight: '1rem' }}>
-            <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+        <ul className="list-none flex m-0 p-0 items-center">
+          <li className="mr-4">
+            <ModeToggle />
+          </li>
+          <li className="mr-4">
+            <Link href="/" className="!text-[var(--foreground)] link-no-underline">
               Home
             </Link>
           </li>
-          <li style={{ marginRight: '1rem' }}>
-            <Link href="/about" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <li className="mr-4">
+            <Link href="/about" className="!text-[var(--foreground)] link-no-underline">
               About
             </Link>
           </li>
           <li>
-            <a href="https://akimasanishida.com" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <a href="https://akimasanishida.com" target="_blank" rel="noopener noreferrer" className="!text-[var(--foreground)] link-no-underline">
               HP
             </a>
           </li>

@@ -11,8 +11,10 @@ interface PostPageProps {
 }
 
 // This is a Server Component, so it can be async
-const PostPage: React.FC<PostPageProps> = async ({ params }) => {
-  const { slug } = params;
+const PostPage = async ({ params }: {
+  params: Promise<{ slug: string }>
+}) => {
+  const { slug } = await params;
   const post: PostDetail | null = await getPostBySlug(slug);
 
   if (!post) {
@@ -26,20 +28,18 @@ const PostPage: React.FC<PostPageProps> = async ({ params }) => {
   // For now, we primarily use data directly from Firestore fields like post.title, post.category.
 
   return (
-    <article style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem' }}>
-      <header style={{ marginBottom: '2rem', borderBottom: '1px solid #eee', paddingBottom: '1rem' }}>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', color: '#111' }}>
-          {post.title}
-        </h1>
-        <div style={{ fontSize: '0.9rem', color: '#555' }}>
+    <article className='prose dark:prose-invert'>
+      <header className='mb-6'>
+        <h1 className='text-4xl mb-2'>{post.title}</h1>
+        <div className='text-sm'>
           <span>Published on: {new Date(post.publishDate).toLocaleDateString()}</span>
           {post.updateDate && (
-            <span style={{ marginLeft: '1rem' }}>
+            <span className='ml-4'>
               Updated on: {new Date(post.updateDate).toLocaleDateString()}
             </span>
           )}
-          <span style={{ marginLeft: '1rem' }}>
-            Category: <span style={{ fontWeight: 'bold' }}>{post.category}</span>
+          <span className='ml-4'>
+            Category: <span className='font-bold'>{post.category}</span>
           </span>
         </div>
       </header>
@@ -52,8 +52,7 @@ const PostPage: React.FC<PostPageProps> = async ({ params }) => {
         For this blog, assuming content is admin-curated.
       */}
       <div
-        className="prose lg:prose-xl max-w-none markdown-content" // Added .markdown-content
-        style={{ lineHeight: '1.7', color: '#333' }} // Basic inline style as fallback
+        className="max-w-none markdown-content" // Added .markdown-content
         dangerouslySetInnerHTML={{ __html: contentHtml }}
       />
 
@@ -63,7 +62,7 @@ const PostPage: React.FC<PostPageProps> = async ({ params }) => {
         can be done via CSS (e.g., targeting .anchor class if configured).
       */}
 
-      <footer style={{ marginTop: '3rem', paddingTop: '1rem', borderTop: '1px solid #eee', fontSize: '0.9rem', color: '#777' }}>
+      <footer className='mt-12 pt-4 border-t text-sm'>
         <p>Thank you for reading!</p>
         {/* Placeholder for related posts or social sharing */}
       </footer>
