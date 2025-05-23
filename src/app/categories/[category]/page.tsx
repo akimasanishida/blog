@@ -23,12 +23,12 @@ const CategoryPage: React.FC<CategoryPageProps> = async ({ params }) => {
     .join(' ');
 
   return (
-    <div className="p-4">
+    <>
       <h1 className="text-center my-8 text-[2.5rem]">
         Category: {displayCategoryName}
       </h1>
       <PostList posts={filteredPosts} />
-    </div>
+    </>
   );
 };
 

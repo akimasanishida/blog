@@ -8,10 +8,12 @@ interface YearlyArchivePageProps {
   };
 }
 
-const YearlyArchivePage: React.FC<YearlyArchivePageProps> = ({ params }) => {
-  const year = parseInt(params.year, 10);
+const YearlyArchivePage = async({ params }: { params: Promise<{ year: string }> }) => {
+  const { year } = await params;
 
-  if (isNaN(year)) {
+  const year_num = parseInt(year, 10);
+
+  if (isNaN(year_num)) {
     // Or handle as a "not found" case, though Next.js routing should prevent this with valid number patterns
     return <p className="text-center text-destructive">Invalid year format.</p>;
   }
@@ -21,16 +23,16 @@ const YearlyArchivePage: React.FC<YearlyArchivePageProps> = ({ params }) => {
     // Assuming post.publishDate is an ISO string "YYYY-MM-DDTHH:mm:ss.sssZ"
     // or just "YYYY-MM-DD" which new Date() can parse.
     const postDate = new Date(post.publishDate);
-    return postDate.getUTCFullYear() === year; // Use getUTCFullYear for consistency
+    return postDate.getUTCFullYear() === year_num; // Use getUTCFullYear for consistency
   });
 
   return (
-    <div className="p-4">
+    <>
       <h1 className="text-center my-8 text-[2.5rem]">
-        Archives: {year}
+        Archives: {year_num}
       </h1>
       <PostList posts={filteredPosts} />
-    </div>
+    </>
   );
 };
 

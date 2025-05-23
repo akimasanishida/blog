@@ -110,10 +110,12 @@ const Footer = () => {
             <ul className='list-none p-0 text-sm'>
               {Array.from(archiveData.keys()).sort((a, b) => b.localeCompare(a)).map(year => (
                 <li key={year} className='mb-2'>
-                  <div className='flex items-center cursor-pointer' onClick={() => toggleYear(year)}>
-                    <span className='mr-2 w-2'>
-                      {expandedYears.has(year) ? '▼' : '▶'}
-                    </span>
+                  <div className='flex items-center'>
+                    <div className='flex items-center cursor-pointer' onClick={() => toggleYear(year)}>
+                      <span className='mr-2 w-2'>
+                        {expandedYears.has(year) ? '▼' : '▶'}
+                      </span>
+                    </div>
                     <Link href={`/archives/${year}`} className='no-underline font-bold'>
                       {year}
                     </Link>
