@@ -7,28 +7,28 @@ interface PostListProps {
 
 const PostList: React.FC<PostListProps> = ({ posts }) => {
   if (!posts || posts.length === 0) {
-    return <p style={{ textAlign: 'center', color: '#555' }}>No posts found.</p>;
+    return <p className="text-center text-muted-foreground">No posts found.</p>;
   }
 
   return (
-    <ul style={{ listStyle: 'none', padding: 0 }}>
+    <ul className="list-none p-0">
       {posts.map((post) => (
-        <li key={post.slug} style={{ marginBottom: '2rem', paddingBottom: '1rem', borderBottom: '1px solid #eee' }}>
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>
+        <li key={post.slug} className="mb-8 pb-4 border-b border-border">
+          <h2 className="text-2xl mb-2">
             <Link href={`/posts/${post.slug}`} className='link-no-underline'>
               {post.title}
             </Link>
           </h2>
-          <div style={{ fontSize: '0.9rem', color: '#555', marginBottom: '0.5rem' }}>
+          <div className="text-sm text-muted-foreground mb-2">
             <span>Published on: {new Date(post.publishDate).toLocaleDateString()}</span>
             {post.updateDate && (
-              <span style={{ marginLeft: '1rem' }}>
+              <span className="ml-4">
                 Updated on: {new Date(post.updateDate).toLocaleDateString()}
               </span>
             )}
           </div>
-          <div style={{ fontSize: '0.9rem', color: '#333' }}>
-            Category: <span style={{ fontWeight: 'bold' }}>{post.category}</span>
+          <div className="text-sm text-foreground">
+            Category: <span className="font-bold">{post.category}</span>
           </div>
         </li>
       ))}
