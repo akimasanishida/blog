@@ -1,23 +1,22 @@
 // src/lib/firebase.ts
 
-// IMPORTANT: Replace with your actual Firebase project configuration
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyYOUR_API_KEY",
-  authDomain: "your-project-id.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project-id.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyDmGTu-5lUETPjrs9S9RydWLDlSVVhuaos",
+  authDomain: "blog-c0adf.firebaseapp.com",
+  projectId: "blog-c0adf",
+  storageBucket: "blog-c0adf.firebasestorage.app",
+  messagingSenderId: "146637879129",
+  appId: "1:146637879129:web:3532709b31eb7d178afe48"
 };
 
-// Initialize Firebase (placeholder, actual initialization might differ based on admin vs client SDK)
-// import { initializeApp, getApps } from 'firebase/app';
-// if (!getApps().length) {
-//   initializeApp(firebaseConfig);
-// }
-// export { firebaseConfig }; // or export the initialized app
-
-console.log("Firebase config loaded (placeholder):", firebaseConfig.projectId);
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
 
 // Firestore Post Document Structure (e.g., in a 'posts' collection)
 // interface FirestorePost {
