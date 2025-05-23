@@ -1,5 +1,6 @@
 import PostList from '@/components/PostList';
-import { mockPosts, PostListItem } from '@/lib/mockData'; // Using mockData from src/lib
+import { getAllPosts } from '@/lib/firebase'; // Path to firebase.ts
+import type { PostListItem } from '@/types/post'; // Path to post types
 
 interface CategoryPageProps {
   params: {
@@ -11,13 +12,12 @@ const CategoryPage: React.FC<CategoryPageProps> = ({ params }) => {
   // Decode the category name from the URL (e.g., "Web%20Development" -> "Web Development")
   const decodedCategory = decodeURIComponent(params.category);
 
-  const filteredPosts = mockPosts.filter(post => 
+  const allPosts = await getAllPosts(); // Fetch all posts
+  const filteredPosts = allPosts.filter(post => 
     post.category.toLowerCase() === decodedCategory.toLowerCase()
   );
 
-  // Capitalize the first letter of each word in the category for display, if desired
-  // For simplicity, we'll use the decodedCategory as is for the title, 
-  // but one might want to format it more nicely (e.g. "Web development" -> "Web Development")
+  // Capitalize the first letter of each word in the category for display
   const displayCategoryName = decodedCategory.split(' ')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
@@ -36,7 +36,8 @@ export default CategoryPage;
 
 // Optional: For SSG, if you know all possible categories
 // export async function generateStaticParams() {
-//   const categories = new Set(mockPosts.map(post => post.category.toLowerCase()));
+//   const allPosts = await getAllPosts();
+//   const categories = new Set(allPosts.map(post => post.category.toLowerCase()));
 //   return Array.from(categories).map(category => ({ 
 //     // URL-encode the category slug if it contains spaces or special characters
 //     category: encodeURIComponent(category) 

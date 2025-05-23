@@ -1,5 +1,6 @@
 import PostList from '@/components/PostList';
-import { mockPosts, PostListItem } from '@/lib/mockData'; // Assuming mockData.ts is in src/lib
+import { getAllPosts } from '@/lib/firebase'; // Path to firebase.ts
+import type { PostListItem } from '@/types/post'; // Path to post types
 
 interface YearlyArchivePageProps {
   params: {
@@ -15,9 +16,12 @@ const YearlyArchivePage: React.FC<YearlyArchivePageProps> = ({ params }) => {
     return <p style={{ textAlign: 'center', color: 'red' }}>Invalid year format.</p>;
   }
 
-  const filteredPosts = mockPosts.filter(post => {
+  const allPosts = await getAllPosts(); // Fetch all posts
+  const filteredPosts = allPosts.filter(post => {
+    // Assuming post.publishDate is an ISO string "YYYY-MM-DDTHH:mm:ss.sssZ"
+    // or just "YYYY-MM-DD" which new Date() can parse.
     const postDate = new Date(post.publishDate);
-    return postDate.getFullYear() === year;
+    return postDate.getUTCFullYear() === year; // Use getUTCFullYear for consistency
   });
 
   return (
@@ -34,6 +38,7 @@ export default YearlyArchivePage;
 
 // Optional: For SSG, if you know all possible archive years
 // export async function generateStaticParams() {
-//   const years = new Set(mockPosts.map(post => new Date(post.publishDate).getFullYear()));
+//   const allPosts = await getAllPosts();
+//   const years = new Set(allPosts.map(post => new Date(post.publishDate).getUTCFullYear()));
 //   return Array.from(years).map(year => ({ year: year.toString() }));
 // }

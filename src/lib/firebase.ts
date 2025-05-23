@@ -1,76 +1,103 @@
 // src/lib/firebase.ts
+import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { 
+    getFirestore, 
+    collection, 
+    getDocs, 
+    doc, 
+    getDoc, 
+    query, 
+    orderBy, 
+    Timestamp,
+    Firestore
+} from 'firebase/firestore';
+import type { PostListItem, PostDetail } from '../types/post'; // Adjust path as needed after moving types
 
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
+// Confirmed Firebase project configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyDmGTu-5lUETPjrs9S9RydWLDlSVVhuaos",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY, // Using environment variables
   authDomain: "blog-c0adf.firebaseapp.com",
   projectId: "blog-c0adf",
-  storageBucket: "blog-c0adf.firebasestorage.app",
-  messagingSenderId: "146637879129",
-  appId: "1:146637879129:web:3532709b31eb7d178afe48"
+  storageBucket: "blog-c0adf.appspot.com",
+  messagingSenderId: "969161089145",
+  appId: "1:969161089145:web:f334c13a9751c75a4892ff"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase app
+let app: FirebaseApp;
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApp();
+}
+const db: Firestore = getFirestore(app);
 
-// Firestore Post Document Structure (e.g., in a 'posts' collection)
-// interface FirestorePost {
-//   id?: string; // Document ID, often same as slug
-//   title: string;
-//   slug: string;
-//   publishDate: import('firebase/firestore').Timestamp; // Or string ISO 8601
-//   updateDate?: import('firebase/firestore').Timestamp; // Or string ISO 8601
-//   category: string;
-//   tags?: string[]; // For future use
-//   content: string; // Markdown content
-// }
-
-import { mockPosts, PostListItem, PostDetail, getMockPostListItems } from './mockData';
-
-// We will define PostListItem and PostDetail in a separate types file or reuse/modify existing ones.
-// For now, this file focuses on config and data fetching functions.
+console.log("Firebase app initialized with projectId:", firebaseConfig.projectId);
 
 /**
- * Simulates fetching all posts for list views.
+ * Fetches all posts for list views from Firestore.
  * Returns a promise resolving to an array of PostListItem objects,
  * sorted by publishDate in descending order.
  */
 export const getAllPosts = async (): Promise<PostListItem[]> => {
-  console.log("Simulating getAllPosts fetch from Firestore...");
-  // Simulate async delay
-  await new Promise(resolve => setTimeout(resolve, 100));
+  try {
+    console.log("Fetching all posts from Firestore...");
+    const postsCollection = collection(db, "posts");
+    // Order by publishDate descending. Ensure 'publishDate' field exists and is a Timestamp.
+    const q = query(postsCollection, orderBy("publishDate", "desc"));
+    const querySnapshot = await getDocs(q);
 
-  // Use getMockPostListItems to get items without 'content'
-  const posts = getMockPostListItems();
-
-  // Sort by publishDate (descending)
-  // Assuming publishDate is "YYYY-MM-DD"
-  posts.sort((a, b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime());
-  
-  return posts;
-};
-
-/**
- * Simulates fetching a single post by its slug, including content.
- * Returns a promise resolving to a PostDetail object or null if not found.
- */
-export const getPostBySlug = async (slug: string): Promise<PostDetail | null> => {
-  console.log(`Simulating getPostBySlug fetch for slug: ${slug} from Firestore...`);
-  // Simulate async delay
-  await new Promise(resolve => setTimeout(resolve, 100));
-
-  const post = mockPosts.find(p => p.slug === slug);
-
-  if (post) {
-    return post; // mockPosts already contains PostDetail items (with content)
-  } else {
-    return null;
+    const posts: PostListItem[] = querySnapshot.docs.map(docSnap => {
+      const data = docSnap.data();
+      return {
+        slug: docSnap.id, // Using document ID as slug
+        title: data.title || "Untitled",
+        publishDate: (data.publishDate as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
+        updateDate: (data.updateDate as Timestamp)?.toDate().toISOString(),
+        category: data.category || "Uncategorized",
+        // tags: data.tags || [], // If you add tags later
+      };
+    });
+    
+    console.log(`Fetched ${posts.length} posts.`);
+    return posts;
+  } catch (error) {
+    console.error("Error fetching all posts:", error);
+    // Depending on error handling strategy, you might throw the error,
+    // return an empty array, or return a specific error object.
+    return []; 
   }
 };
 
-// export {}; // Temporary export to make this a module - no longer needed
+/**
+ * Fetches a single post by its slug (document ID) from Firestore.
+ * Returns a promise resolving to a PostDetail object or null if not found.
+ */
+export const getPostBySlug = async (slug: string): Promise<PostDetail | null> => {
+  try {
+    console.log(`Fetching post with slug (doc ID): ${slug} from Firestore...`);
+    const postDocRef = doc(db, "posts", slug);
+    const docSnap = await getDoc(postDocRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const post: PostDetail = {
+        slug: docSnap.id,
+        title: data.title || "Untitled",
+        publishDate: (data.publishDate as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
+        updateDate: (data.updateDate as Timestamp)?.toDate().toISOString(),
+        category: data.category || "Uncategorized",
+        content: data.content || "", // Markdown content
+        // tags: data.tags || [], // If you add tags later
+      };
+      console.log(`Fetched post: ${post.title}`);
+      return post;
+    } else {
+      console.log(`No post found with slug: ${slug}`);
+      return null;
+    }
+  } catch (error) {
+    console.error(`Error fetching post with slug ${slug}:`, error);
+    return null; // Or throw error, based on strategy
+  }
+};

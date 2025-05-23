@@ -1,12 +1,5 @@
 import Link from 'next/link';
-
-export interface PostListItem {
-  slug: string;
-  title: string;
-  publishDate: string; // Using string for simplicity, can be Date
-  updateDate?: string; // Optional, using string
-  category: string;
-}
+import type { PostListItem } from '../types/post'; // Adjusted path
 
 interface PostListProps {
   posts: PostListItem[];

@@ -1,5 +1,6 @@
 import PostList from '@/components/PostList';
-import { mockPosts, PostListItem } from '@/lib/mockData'; // Using mockData from src/lib
+import { getAllPosts } from '@/lib/firebase'; // Path to firebase.ts
+import type { PostListItem } from '@/types/post'; // Path to post types
 
 interface MonthlyArchivePageProps {
   params: {
@@ -25,11 +26,12 @@ const MonthlyArchivePage: React.FC<MonthlyArchivePageProps> = ({ params }) => {
     return <p style={{ textAlign: 'center', color: 'red' }}>Invalid year or month format.</p>;
   }
 
-  const filteredPosts = mockPosts.filter(post => {
+  const allPosts = await getAllPosts(); // Fetch all posts
+  const filteredPosts = allPosts.filter(post => {
     const postDate = new Date(post.publishDate);
     // JavaScript Date months are 0-indexed (0 for Jan, 11 for Dec)
-    // So, compare postDate.getMonth() with month - 1
-    return postDate.getFullYear() === year && (postDate.getMonth() + 1) === month;
+    // So, compare postDate.getUTCMonth() + 1 with the URL month
+    return postDate.getUTCFullYear() === year && (postDate.getUTCMonth() + 1) === month;
   });
 
   const monthName = getMonthName(month);
@@ -48,10 +50,11 @@ export default MonthlyArchivePage;
 
 // Optional: For SSG, if you know all possible archive year/month combinations
 // export async function generateStaticParams() {
+//   const allPosts = await getAllPosts();
 //   const yearMonthCombinations = new Set(
-//     mockPosts.map(post => {
+//     allPosts.map(post => {
 //       const date = new Date(post.publishDate);
-//       return `${date.getFullYear()}/${date.getMonth() + 1}`; // month +1 for 1-indexed
+//       return `${date.getUTCFullYear()}/${date.getUTCMonth() + 1}`; // month +1 for 1-indexed
 //     })
 //   );
 //   return Array.from(yearMonthCombinations).map(ym => {
