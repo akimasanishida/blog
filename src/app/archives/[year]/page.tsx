@@ -13,7 +13,7 @@ const YearlyArchivePage: React.FC<YearlyArchivePageProps> = ({ params }) => {
 
   if (isNaN(year)) {
     // Or handle as a "not found" case, though Next.js routing should prevent this with valid number patterns
-    return <p style={{ textAlign: 'center', color: 'red' }}>Invalid year format.</p>;
+    return <p className="text-center text-destructive">Invalid year format.</p>;
   }
 
   const allPosts = await getAllPosts(); // Fetch all posts
@@ -25,8 +25,8 @@ const YearlyArchivePage: React.FC<YearlyArchivePageProps> = ({ params }) => {
   });
 
   return (
-    <div style={{ padding: '1rem' }}>
-      <h1 style={{ textAlign: 'center', margin: '2rem 0', fontSize: '2.5rem' }}>
+    <div className="p-4">
+      <h1 className="text-center my-8 text-[2.5rem]">
         Archives: {year}
       </h1>
       <PostList posts={filteredPosts} />

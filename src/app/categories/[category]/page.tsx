@@ -23,8 +23,8 @@ const CategoryPage: React.FC<CategoryPageProps> = async ({ params }) => {
     .join(' ');
 
   return (
-    <div style={{ padding: '1rem' }}>
-      <h1 style={{ textAlign: 'center', margin: '2rem 0', fontSize: '2.5rem' }}>
+    <div className="p-4">
+      <h1 className="text-center my-8 text-[2.5rem]">
         Category: {displayCategoryName}
       </h1>
       <PostList posts={filteredPosts} />

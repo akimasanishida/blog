@@ -17,32 +17,17 @@ const SearchBox = () => {
   };
 
   return (
-    <form onSubmit={handleSearch} style={{ display: 'flex', alignItems: 'center' }}>
+    <form onSubmit={handleSearch} className="flex items-center">
       <input
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search articles..."
-        style={{
-          padding: '0.5rem',
-          border: '1px solid #ccc',
-          borderRadius: '4px',
-          marginRight: '0.5rem',
-          fontSize: '0.9rem',
-          flexGrow: 1,
-        }}
+        className="p-2 border border-border rounded mr-2 text-sm flex-grow"
       />
       <button
         type="submit"
-        style={{
-          padding: '0.5rem 0.75rem',
-          border: '1px solid #0070f3',
-          backgroundColor: '#0070f3',
-          color: 'white',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          fontSize: '0.9rem',
-        }}
+        className="px-3 py-2 border border-primary bg-primary text-primary-foreground rounded cursor-pointer text-sm"
       >
         🔍
       </button>

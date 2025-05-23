@@ -8,7 +8,7 @@ export default async function Home() {
 
   return (
     <>
-      <h1 style={{ textAlign: 'center', margin: '2rem 0', fontSize: '2.5rem' }}>
+      <h1 className="text-center my-8 text-[2.5rem]">
         Recent Posts
       </h1>
       <PostList posts={posts} />
