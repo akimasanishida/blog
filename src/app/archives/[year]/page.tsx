@@ -28,7 +28,7 @@ const YearlyArchivePage = async({ params }: { params: Promise<{ year: string }> 
 
   return (
     <>
-      <h1 className="text-center my-8 text-[2.5rem]">
+      <h1>
         Archives: {year_num}
       </h1>
       <PostList posts={filteredPosts} />

@@ -40,7 +40,7 @@ const MonthlyArchivePage = async ({ params }: {
 
   return (
     <>
-      <h1 style={{ textAlign: 'center', margin: '2rem 0', fontSize: '2.5rem' }}>
+      <h1>
         Archives: {monthName} {year_num}
       </h1>
       <PostList posts={filteredPosts} />

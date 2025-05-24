@@ -8,7 +8,7 @@ export default async function Home() {
 
   return (
     <>
-      <h1 className="text-center my-8 text-[2.5rem]">
+      <h1>
         Recent Posts
       </h1>
       <PostList posts={posts} />

@@ -35,11 +35,11 @@ const db: Firestore = getFirestore(app);
 console.log("Firebase app initialized with projectId:", firebaseConfig.projectId);
 
 /**
- * Fetches all posts for list views from Firestore.
- * Returns a promise resolving to an array of PostListItem objects,
+ * Fetches all posts with their full content from Firestore.
+ * Returns a promise resolving to an array of PostDetail objects,
  * sorted by publishDate in descending order.
  */
-export const getAllPosts = async (): Promise<PostListItem[]> => {
+export const getAllPosts = async (): Promise<PostDetail[]> => {
   try {
     console.log("Fetching all posts from Firestore...");
     const postsCollection = collection(db, "posts");
@@ -47,7 +47,7 @@ export const getAllPosts = async (): Promise<PostListItem[]> => {
     const q = query(postsCollection, orderBy("publishDate", "desc"));
     const querySnapshot = await getDocs(q);
 
-    const posts: PostListItem[] = querySnapshot.docs.map(docSnap => {
+    const posts: PostDetail[] = querySnapshot.docs.map(docSnap => {
       const data = docSnap.data();
       return {
         slug: docSnap.id, // Using document ID as slug
@@ -55,6 +55,7 @@ export const getAllPosts = async (): Promise<PostListItem[]> => {
         publishDate: (data.publishDate as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
         updateDate: (data.updateDate as Timestamp)?.toDate().toISOString(),
         category: data.category || "Uncategorized",
+        content: data.content || "", // Add content field
         // tags: data.tags || [], // If you add tags later
       };
     });
