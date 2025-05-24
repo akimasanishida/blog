@@ -23,7 +23,7 @@ const SearchBox = () => {
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search articles..."
+        placeholder="キーワードで検索"
         className="p-2 border border-border rounded mr-2 text-sm flex-grow"
       />
       <button

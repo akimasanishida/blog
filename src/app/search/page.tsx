@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import SearchBox from '@/components/SearchBox';
 import { getAllPosts } from '@/lib/firebase';
 import PostList from '@/components/PostList'; // Assuming PostList is in this path
 import Fuse from 'fuse.js';
@@ -62,14 +63,18 @@ export const SearchResultsPageContent: React.FC = () => {
   }
 
   return (
-    <div>
-      <h1>Search results for: &quot;{query}&quot;</h1>
+    <>
+      <h1>&quot;{query}&quot; の検索結果</h1>
+      <div className='p-4'>
+        <SearchBox />
+      </div>
+      <hr />
       {searchResults.length === 0 ? (
         <p>&quot;{query}&quot; の検索結果はありませんでした。</p>
       ) : (
         <PostList posts={searchResults} />
       )}
-    </div>
+    </>
   );
 };
 

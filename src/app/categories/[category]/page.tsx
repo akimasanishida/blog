@@ -24,7 +24,7 @@ const CategoryPage: React.FC<CategoryPageProps> = async ({ params }) => {
 
   return (
     <>
-      <h1 className="text-center my-8 text-[2.5rem]">
+      <h1>
         Category: {displayCategoryName}
       </h1>
       <PostList posts={filteredPosts} />
