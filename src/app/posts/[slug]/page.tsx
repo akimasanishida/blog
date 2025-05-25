@@ -8,6 +8,17 @@ import { CalendarPlus, ClockClockwise } from '@/components/Icons'; // Adjusted i
 import { formatJpDate } from '@/lib/format'; // Adjusted import path
 import SocialShareLinks from '@/components/SocialShareLinks';
 
+const generateMetadata = async ({ params }: { params: Promise<{ slug: string }> }) => {
+  const { slug } = await params;
+  const post = await getPostBySlug(slug);
+
+  if (!post) return;
+
+  return {
+    title: post.title,
+  };
+};
+
 interface PostPageProps {
   params: {
     slug: string;
@@ -81,6 +92,7 @@ const PostPage = async ({ params }: {
 };
 
 export default PostPage;
+export { generateMetadata };
 
 // Optional: Generate static params for known slugs if using SSG with live data
 // export async function generateStaticParams() {

@@ -1,6 +1,18 @@
 import PostList from '@/components/PostList';
 import { getAllPosts } from '@/lib/firebase'; // Path to firebase.ts
-import type { PostListItem } from '@/types/post'; // Path to post types
+
+const generateMetadata = async ({
+  params,
+}: {
+  params: Promise<{ year: string }>;
+}) => {
+  const { year } = await params;
+
+  return {
+    title: `ブログアーカイブ（${year}年）`,
+    description: `${year}年の投稿一覧`,
+  };
+};
 
 interface YearlyArchivePageProps {
   params: {
@@ -37,6 +49,7 @@ const YearlyArchivePage = async({ params }: { params: Promise<{ year: string }> 
 };
 
 export default YearlyArchivePage;
+export { generateMetadata };
 
 // Optional: For SSG, if you know all possible archive years
 // export async function generateStaticParams() {

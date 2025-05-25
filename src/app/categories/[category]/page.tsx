@@ -1,6 +1,18 @@
 import PostList from '@/components/PostList';
 import { getAllPosts } from '@/lib/firebase'; // Path to firebase.ts
-import type { PostListItem } from '@/types/post'; // Path to post types
+
+const generateMetadata = async ({
+  params,
+}: {
+  params: Promise<{ category: string }>;
+}) => {
+  const { category } = await params;
+
+  return {
+    title: `${category} カテゴリー`,
+    description: `${category}カテゴリーの投稿一覧`,
+  };
+};
 
 interface CategoryPageProps {
   params: {
@@ -29,6 +41,7 @@ const CategoryPage = async ({ params }: {
 };
 
 export default CategoryPage;
+export { generateMetadata };
 
 // Optional: For SSG, if you know all possible categories
 // export async function generateStaticParams() {
