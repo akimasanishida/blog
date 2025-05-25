@@ -12,7 +12,7 @@ export const SearchResultsPageContent: React.FC = () => {
   const searchParams = useSearchParams();
   const query = searchParams.get('q');
 
-  const [allPosts, setAllPosts] = useState<PostDetail[]>([]);
+  const [, setAllPosts] = useState<PostDetail[]>([]);
   const [searchResults, setSearchResults] = useState<PostDetail[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [fuseInstance, setFuseInstance] = useState<Fuse<PostDetail> | null>(null);

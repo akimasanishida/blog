@@ -14,12 +14,6 @@ const generateMetadata = async ({
   };
 };
 
-interface YearlyArchivePageProps {
-  params: {
-    year: string;
-  };
-}
-
 const YearlyArchivePage = async({ params }: { params: Promise<{ year: string }> }) => {
   const { year } = await params;
 

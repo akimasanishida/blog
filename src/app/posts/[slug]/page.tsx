@@ -7,6 +7,8 @@ import type { PostDetail } from '@/types/post'; // Updated import
 import { CalendarPlus, ClockClockwise } from '@/components/Icons'; // Adjusted import path
 import { formatJpDate } from '@/lib/format'; // Adjusted import path
 import SocialShareLinks from '@/components/SocialShareLinks';
+import 'katex/dist/katex.min.css';
+import 'prism-themes/themes/prism-one-dark.css';
 
 const generateMetadata = async ({ params }: { params: Promise<{ slug: string }> }) => {
   const { slug } = await params;
@@ -18,12 +20,6 @@ const generateMetadata = async ({ params }: { params: Promise<{ slug: string }> 
     title: post.title,
   };
 };
-
-interface PostPageProps {
-  params: {
-    slug: string;
-  };
-}
 
 // This is a Server Component, so it can be async
 const PostPage = async ({ params }: {
@@ -38,13 +34,13 @@ const PostPage = async ({ params }: {
 
   // Render Markdown to HTML
   // The content in Firestore is expected to be Markdown.
-  const { contentHtml, frontmatterData } = await renderMarkdownToHTML(post.content);
+  const { contentHtml } = await renderMarkdownToHTML(post.content);
   // Note: frontmatterData might be useful if you store metadata in Markdown frontmatter
   // For now, we primarily use data directly from Firestore fields like post.title, post.category.
 
   return (
-    <article className='prose dark:prose-invert'>
-      <header className='mb-6'>
+    <article className='prose dark:prose-invert max-w-full'>
+      <header className='mb-6 pb-4 border-b'>
         <h1 className='text-4xl mb-2'>{post.title}</h1>
         <div className='text-sm text-muted-foreground flex items-center'>
           <span><CalendarPlus className='inline-block w-5 h-5'/> <span className="ml-1">{formatJpDate(post.publishDate)}</span></span>
@@ -56,11 +52,10 @@ const PostPage = async ({ params }: {
         </div>
         <div className='text-sm text-muted-foreground'>
           <span>
-            カテゴリー：<span className='font-bold'>
-              <Link href={`/categories/${encodeURIComponent(post.category.toLowerCase())}`} className='!text-muted-foreground'>
-                {post.category}
-              </Link>
-            </span>
+            カテゴリー：
+            <Link href={`/categories/${encodeURIComponent(post.category.toLowerCase())}`} className='!text-muted-foreground'>
+              <span className='font-bold'>{post.category}</span>
+            </Link>
           </span>
         </div>
       </header>
@@ -73,7 +68,6 @@ const PostPage = async ({ params }: {
         For this blog, assuming content is admin-curated.
       */}
       <div
-        className="max-w-none markdown-content" // Added .markdown-content
         dangerouslySetInnerHTML={{ __html: contentHtml }}
       />
 

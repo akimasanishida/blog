@@ -4,15 +4,13 @@ import {
     getFirestore, 
     collection, 
     getDocs, 
-    doc, 
-    getDoc, 
     query, 
     orderBy, 
     where,
     Timestamp,
     Firestore
 } from 'firebase/firestore';
-import type { PostListItem, PostDetail } from '../types/post'; // Adjust path as needed after moving types
+import type { PostDetail } from '../types/post'; // Adjust path as needed after moving types
 
 // Confirmed Firebase project configuration
 const firebaseConfig = {
@@ -49,17 +47,17 @@ export const getAllPosts = async (): Promise<PostDetail[]> => {
       const data = docSnap.data();
       return {
         slug: data.slug, // Using document ID as slug
-        title: data.title || "Untitled",
+        title: data.title || "untitled",
         publishDate: (data.publishDate as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
         updateDate: (data.updateDate as Timestamp)?.toDate().toISOString(),
-        category: data.category || "Uncategorized",
+        category: data.category || "uncategorized",
         content: data.content || "", // Add content field
         // tags: data.tags || [], // If you add tags later
       };
     });
     
     return posts;
-  } catch (error) {
+  } catch {
     // Depending on error handling strategy, you might throw the error,
     // return an empty array, or return a specific error object.
     return []; 
@@ -81,17 +79,17 @@ export const getPostBySlug = async (slug: string): Promise<PostDetail | null> =>
       const data = docSnap.data();
       const post: PostDetail = {
         slug: data.slug,
-        title: data.title || "Untitled",
+        title: data.title || "untitled",
         publishDate: (data.publishDate as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
         updateDate: (data.updateDate as Timestamp)?.toDate().toISOString(),
-        category: data.category || "Uncategorized",
+        category: data.category || "uncategorized",
         content: data.content || "",
       };
       return post;
     } else {
       return null;
     }
-  } catch (error) {
+  } catch {
     return null;
   }
 };

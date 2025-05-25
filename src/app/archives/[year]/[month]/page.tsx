@@ -15,21 +15,6 @@ const generateMetadata = async ({
   };
 };
 
-interface MonthlyArchivePageProps {
-  params: {
-    year: string;
-    month: string;
-  };
-}
-
-const getMonthName = (monthNumber: number): string => {
-  const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ];
-  return monthNames[monthNumber - 1] || "Invalid Month"; // monthNumber is 1-12
-};
-
 const MonthlyArchivePage = async ({ params }: {
   params: Promise<{ year: string; month: string }>,
 }) => {

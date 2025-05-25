@@ -12,7 +12,7 @@ import matter from 'gray-matter'; // For frontmatter parsing
 
 interface MarkdownResult {
   contentHtml: string;
-  frontmatterData?: { [key: string]: any };
+  frontmatterData?: { [key: string]: string | number | boolean | string[] | number[] | boolean[] | object };
 }
 
 /**

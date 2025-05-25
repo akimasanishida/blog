@@ -7,15 +7,6 @@ import { getAllPosts } from '@/lib/firebase'; // Adjust path if necessary
 import type { PostListItem } from '@/types/post'; // Adjust path if necessary
 import SearchBox from './SearchBox';
 
-// Helper function to get month name from month number (1-12)
-const getMonthName = (monthNumber: string): string => {
-  const num = parseInt(monthNumber, 10);
-  const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ];
-  return monthNames[num - 1] || "Invalid Month";
-};
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();

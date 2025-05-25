@@ -14,12 +14,6 @@ const generateMetadata = async ({
   };
 };
 
-interface CategoryPageProps {
-  params: {
-    category: string; // This will be URL-encoded
-  };
-}
-
 const CategoryPage = async ({ params }: {
   params: Promise<{ category: string }>;
 }) => {
