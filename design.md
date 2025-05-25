@@ -113,6 +113,7 @@ app/
 
 - Next.js（App Router）
 - shacdn ui
+- tailwindcss/typography（マークダウン用）
 - Vercel
 - Firebase（マークダウン・画像保存・データベース・認証）
 - fuse.js（全文検索）
