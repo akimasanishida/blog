@@ -16,7 +16,7 @@ import withAdminAuth from '@/components/withAdminAuth';
 import { db } from '@/lib/firebase';
 import { 
   collection, query, orderBy, getDocs, Timestamp, doc, updateDoc, deleteDoc, serverTimestamp, 
-  OrderByDirection, limit, startAfter, endBefore, limitToLast, DocumentSnapshot, QueryDocumentSnapshot
+  OrderByDirection, limit, startAfter, QueryDocumentSnapshot
 } from 'firebase/firestore';
 
 
@@ -65,7 +65,7 @@ function AdminPage() {
     try {
       const postsCollectionRef = collection(db, "posts");
       let q;
-      let baseQuery = query(postsCollectionRef, orderBy(currentSortField, currentSortDirection));
+      const baseQuery = query(postsCollectionRef, orderBy(currentSortField, currentSortDirection));
       if (pageDirection === "first") {
         setCurrentPage(1);
         setPageDocCursors([null]);

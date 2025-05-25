@@ -27,7 +27,7 @@ export default function withAdminAuth<P extends object>(WrappedComponent: React.
           try {
             const tokenResult = await currentUser.getIdTokenResult(true);
             setIsAdmin(!!tokenResult.claims.admin);
-          } catch (e) {
+          } catch {
             setIsAdmin(false);
           }
         } else {

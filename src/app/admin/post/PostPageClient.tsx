@@ -6,13 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowsClockwiseIcon , WarningCircleIcon  } from '@phosphor-icons/react';
+import Image from "next/image";
 import withAdminAuth from '@/components/withAdminAuth';
 import { db, storage } from '@/lib/firebase';
 import {
-  doc, getDoc, setDoc, addDoc, updateDoc, collection, serverTimestamp, Timestamp, query, where, getDocs
+  doc, getDoc, addDoc, updateDoc, collection, serverTimestamp, Timestamp, query, where, getDocs
 } from 'firebase/firestore';
 import {
-  ref, uploadBytesResumable, getDownloadURL, listAll, deleteObject, StorageReference
+  ref, uploadBytesResumable, getDownloadURL, listAll
 } from 'firebase/storage';
 
 // Define the Post interface
@@ -358,7 +359,13 @@ function AdminPostPage() {
                     onClick={() => handleImageClickToInsert(img)}
                     title={`「${img.name}」を挿入`}
                   >
-                    <img src={img.url} alt={img.name} className="w-full h-20 object-cover" />
+                    <Image
+                      src={img.url}
+                      alt={img.name}
+                      width={200}
+                      height={200}
+                      className="w-full h-20 object-cover"
+                    />
                   </div>
                 ))}
               </div>

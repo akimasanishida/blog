@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef, ChangeEvent } from 'react';
+import Image from 'next/image';
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TrashIcon, CloudArrowUpIcon, ArrowsClockwiseIcon, WarningCircleIcon} from '@phosphor-icons/react'
 import withAdminAuth from '@/components/withAdminAuth';
 import { storage } from '@/lib/firebase';
 import { 
-  ref, uploadBytesResumable, getDownloadURL, listAll, deleteObject, StorageReference 
+  ref, uploadBytesResumable, getDownloadURL, listAll, deleteObject 
 } from 'firebase/storage';
 
 interface ImageInfo {
@@ -163,10 +164,12 @@ function AdminImagesPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 p-4">
             {images.map((image) => (
               <div key={image.refPath} className="relative group border rounded-lg overflow-hidden shadow-sm">
-                <img 
-                  src={image.url} 
-                  alt={image.name} 
-                  className="w-full h-32 object-cover transition-transform duration-300 ease-in-out group-hover:scale-105" 
+                <Image
+                  src={image.url}
+                  alt={image.name}
+                  width={200}
+                  height={200}
+                  className="w-full h-32 object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
                 />
                 <div className="p-2">
                   <p className="text-xs font-medium truncate" title={image.name}>{image.name}</p>
