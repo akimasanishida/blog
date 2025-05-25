@@ -44,7 +44,7 @@ app/
 │   └── page.tsx          # 管理画面
         └── post/
         │   └── page.tsx  # 記事投稿・編集画面
-        └── image/
+        └── images/
             └── page.tsx  # 画像一覧（投稿・削除画面）
 ```
 
@@ -61,18 +61,17 @@ app/
 
 ### 記事
 
-#### メタデータ
+#### データ
 
-- タイトル
-- スラッグ（URLに使用）
-- 投稿日時（自動生成）
-- 更新日時（自動生成）
-- カテゴリ（一つのみ）
-- タグ（複数・将来拡張用）
-
-#### 機能
-
-- 見出しにリンクアンカーを付与。Hover すると、クリックでリンクを取得できる🔗 icon を表示
+- `id`: Firestore Database が自動で付与
+- `title` (string, optional): タイトル
+- `slug` (string): スラッグ（URLに使用）
+- `publishDate` (timestamp): 投稿日時（自動生成）
+- `updateDate` (timestamp, optional): 更新日時（自動生成）
+- `category` (string, optional): カテゴリ（一つのみ）
+- `tags` (string, optional): タグ（複数・将来拡張用）
+- `content` (string, optional): Markdown テキスト
+- `isPublic` (bool): 公開中か（`false`: 下書き）
 
 ### 検索結果
 
@@ -83,7 +82,37 @@ app/
 
 ### Admin
 
-#### 認証
+- 削除時は常に確認をするようにする
+
+**`admin`**
+
+- 上部：「新しい投稿」「画像管理」（ui の Button）
+- 下部：投稿を表で表示（ui の Table）。参考：https://ui.shadcn.com/docs/components/data-table
+    - 記事タイトル（クリックで編集ページへ）
+    - カテゴリー
+    - 投稿日時（昇降順並び替え可能）
+    - 更新日時（昇降順並び替え可能）
+    - ページを見る（新しいタブで記事のページへ）
+    - 下書きに戻すボタン
+    - 削除
+
+**`admin/post`**
+
+- 左ペイン
+    - タイトル・本文入力欄・公開 or 更新ボタン
+        - 公開 or 更新ボタンを押したとき、正常に登録できるか確認する（`slug` の確認、ネットワークエラーなく登録できたかの確認など）
+- 右サイドバー
+    - slug 入力
+    - カテゴリー入力
+    - アップロード済み画像をパネル表示（ui の ScrollArea で独立させる）。ここから選択して貼り付け可能。カーソルの位置に画像挿入。画像アップロードボタンも
+
+**`admin/images`**
+
+- 画像の追加、削除ボタン（ui の Button）
+- 画像一覧をパネル表示するエリア（ui の ScrollArea で独立させる）
+- 画像を追加した際、名前が重複する場合は自動で調整
+
+#### 認証（`admin` 以下の各ページ）
 
 - Firebase Authentication を使用（GitHub アカウントで認証）
 - 未ログインの場合は、ログイン画面を表示
@@ -108,14 +137,18 @@ app/
     - 検索ボックスを表示。キーワードを入力して Enter を押す or 虫眼鏡ボタンを押すと、検索結果ページに遷移する。
 - `PostList`（記事一覧）
     - 記事のタイトル・投稿日・更新日（あれば）・カテゴリを表示
+- `LoginForm`（ログインフォーム）
 
 ## 使用技術
 
 - Next.js（App Router）
-- shacdn ui
+- shacdn ui（UI はこれで揃える）
 - tailwindcss/typography（マークダウン用）
 - Vercel
-- Firebase（マークダウン・画像保存・データベース・認証）
+- Firebase
+    - Firestore Database: データベース
+    - Storage: 画像
+    - Authentication: 認証
 - fuse.js（全文検索）
 - phosphor-icons/react（アイコン）
 - Markdown→HTML変換：
