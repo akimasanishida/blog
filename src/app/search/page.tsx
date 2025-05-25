@@ -1,6 +1,8 @@
 import React from 'react';
 import SearchPageClient from './SearchPageClient';
 
+export const dynamic = "force-dynamic";
+
 const generateMetadata = async ({
   searchParams,
 }: {
