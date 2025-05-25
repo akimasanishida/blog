@@ -8,13 +8,9 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import withAdminAuth from '@/components/withAdminAuth'; // Import the HOC
-import dynamic from "next/dynamic";
-
-const AdminPageClient = dynamic(() => import("./AdminPageClient"), { ssr: false });
+import withAdminAuth from '@/components/withAdminAuth';
 
 function AdminPage() {
-  // Placeholder data for the table
   const posts = [
     { id: "1", title: "My First Post", category: "Tech", publishDate: "2024-01-01", updateDate: "2024-01-02" },
   ];
@@ -22,13 +18,10 @@ function AdminPage() {
   return (
     <div className="container mx-auto py-10">
       <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
-      
       <div className="mb-6 flex space-x-4">
         <Button>新しい投稿</Button>
         <Button variant="outline">画像管理</Button>
       </div>
-
-      {/* TODO: Implement actual data fetching and table population */}
       <Table>
         <TableHeader>
           <TableRow>
@@ -43,13 +36,12 @@ function AdminPage() {
         <TableBody>
           {posts.map((post) => (
             <TableRow key={post.id}>
-              <TableCell>{/* TODO: Link to admin/post?id=[post_id] */}{post.title}</TableCell>
+              <TableCell>{post.title}</TableCell>
               <TableCell>{post.category}</TableCell>
               <TableCell>{post.publishDate}</TableCell>
               <TableCell>{post.updateDate}</TableCell>
-              <TableCell>{/* TODO: Link to actual post page */}<Button variant="outline" size="sm">見る</Button></TableCell>
+              <TableCell><Button variant="outline" size="sm">見る</Button></TableCell>
               <TableCell>
-                {/* TODO: Implement Draft and Delete buttons */}
                 <Button variant="ghost" size="sm">下書き</Button>
                 <Button variant="destructive" size="sm" className="ml-2">削除</Button>
               </TableCell>
@@ -68,8 +60,4 @@ function AdminPage() {
   );
 }
 
-export const AdminPageWithAuth = withAdminAuth(AdminPage); // Named export for the HOC-wrapped component
-
-export default function Page() {
-  return <AdminPageClient />;
-}
+export default withAdminAuth(AdminPage);
