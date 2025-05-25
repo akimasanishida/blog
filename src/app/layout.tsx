@@ -56,7 +56,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <Header />
-            <div className="main-content py-4 sm:px-6 lg:px-12 pt-16 pb-2 mx-auto max-w-screen-lg">
+            <div className="main-content py-4 px-4 sm:px-6 lg:px-12 pt-16 pb-2 mx-auto max-w-screen-lg">
               <main>
                 {children}
               </main>
