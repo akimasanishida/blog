@@ -10,6 +10,7 @@ import {
     Timestamp,
     Firestore
 } from 'firebase/firestore';
+import { getAuth, Auth } from 'firebase/auth'; // Added for Firebase Auth
 import type { PostDetail } from '../types/post'; // Adjust path as needed after moving types
 
 // Confirmed Firebase project configuration
@@ -30,6 +31,9 @@ if (!getApps().length) {
   app = getApp();
 }
 const db: Firestore = getFirestore(app);
+const auth: Auth = getAuth(app); // Added for Firebase Auth
+
+export { app, db, auth }; // Export auth
 
 /**
  * Fetches all posts with their full content from Firestore.
@@ -60,9 +64,13 @@ export const getAllPosts = async (): Promise<PostDetail[]> => {
   } catch {
     // Depending on error handling strategy, you might throw the error,
     // return an empty array, or return a specific error object.
-    return []; 
+    return [];
   }
 };
+
+// Export app and db individually if needed elsewhere, or keep them bundled.
+// For this task, only 'auth' is strictly needed by other components,
+// but exporting 'app' and 'db' is fine.
 
 /**
  * Fetches a single post by its slug (document ID) from Firestore.
