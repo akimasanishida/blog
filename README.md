@@ -119,3 +119,7 @@ Firebase Console > Firestore Database > インデックス より、複合イン
   - `isPublic` (昇順 Ascending または 降順 Descending - == でのフィルタリングなのでどちらでも可)
   - `publishDate` (クエリに合わせて 降順 Descending)
 - クエリのスコープ: コレクション (Collection)
+
+**本番環境のために**
+
+- Firebase Console > Authentification > 設定 > 承認済みドメイン でサイトのドメインを追加
