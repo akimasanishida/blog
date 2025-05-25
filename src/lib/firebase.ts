@@ -11,6 +11,7 @@ import {
     Firestore
 } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth'; // Added for Firebase Auth
+import { getStorage, FirebaseStorage } from 'firebase/storage'; // Added for Firebase Storage
 import type { PostDetail } from '../types/post'; // Adjust path as needed after moving types
 
 // Confirmed Firebase project configuration
@@ -32,8 +33,9 @@ if (!getApps().length) {
 }
 const db: Firestore = getFirestore(app);
 const auth: Auth = getAuth(app); // Added for Firebase Auth
+const storage: FirebaseStorage = getStorage(app); // Added for Firebase Storage
 
-export { app, db, auth }; // Export auth
+export { app, db, auth, storage }; // Export storage
 
 /**
  * Fetches all posts with their full content from Firestore.
