@@ -8,6 +8,7 @@ import rehypeKatex from 'rehype-katex';
 import rehypePrismPlus from 'rehype-prism-plus';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import rehypeStringify from 'rehype-stringify';
+import rehypeSlug from 'rehype-slug';
 import matter from 'gray-matter'; // For frontmatter parsing
 
 interface MarkdownResult {
@@ -34,6 +35,7 @@ export const renderMarkdownToHTML = async (markdownContent: string): Promise<Mar
                                           // allowDangerousHtml: true only if source is trusted
     .use(rehypeKatex)                     // Render math with KaTeX
     .use(rehypePrismPlus, { ignoreMissing: true, showLineNumbers: true }) // Code syntax highlighting
+    .use(rehypeSlug)                      // Add slugs to headings for linking
     .use(rehypeAutolinkHeadings, {         // Add self-links to headings
       behavior: 'wrap', // or 'append', 'prepend'
       properties: {

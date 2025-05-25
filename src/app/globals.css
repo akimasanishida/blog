@@ -124,6 +124,7 @@
 
 html {
   font-size: 16px; /* Base font size */
+  scroll-behavior: smooth; /* Smooth scrolling */
 }
 
 body {
@@ -164,4 +165,16 @@ h2 {
 
 .prose {
   max-width: 100%;
+}
+
+a.anchor {
+  color: var(--foreground);
+  text-decoration: none; /* No underline */
+}
+a.anchor:hover {
+  text-decoration: none; /* Underline on hover */
+}
+
+[id] {
+  @apply scroll-mt-20;
 }
