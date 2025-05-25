@@ -19,6 +19,9 @@ const auth = getAuth();
 
 async function setClaims() {
   const uid = process.env.FIREBASE_ADMIN_UID; // 👈 対象ユーザーの UID をここに
+  if (!uid) {
+    throw new Error('FIREBASE_ADMIN_UID is not set in environment variables.');
+  }
   const claims = {
     admin: true, // 👈 設定したいカスタムクレーム
   };
