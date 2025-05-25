@@ -1,6 +1,8 @@
 import PostList from '@/components/PostList';
 import { getAllPosts } from '@/lib/firebase'; // Path to firebase.ts
 
+export const dynamic = "force-dynamic";
+
 const generateMetadata = async ({
   params,
 }: {
