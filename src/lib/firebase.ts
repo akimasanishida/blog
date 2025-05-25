@@ -10,16 +10,18 @@ import {
     Timestamp,
     Firestore
 } from 'firebase/firestore';
+import { getAuth, Auth } from 'firebase/auth'; // Added for Firebase Auth
+import { getStorage, FirebaseStorage } from 'firebase/storage'; // Added for Firebase Storage
 import type { PostDetail } from '../types/post'; // Adjust path as needed after moving types
 
 // Confirmed Firebase project configuration
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY, // Using environment variables
-  authDomain: "blog-c0adf.firebaseapp.com",
-  projectId: "blog-c0adf",
-  storageBucket: "blog-c0adf.appspot.com",
-  messagingSenderId: "969161089145",
-  appId: "1:969161089145:web:f334c13a9751c75a4892ff"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
 // Initialize Firebase app
@@ -30,6 +32,10 @@ if (!getApps().length) {
   app = getApp();
 }
 const db: Firestore = getFirestore(app);
+const auth: Auth = getAuth(app); // Added for Firebase Auth
+const storage: FirebaseStorage = getStorage(app); // Added for Firebase Storage
+
+export { app, db, auth, storage }; // Export storage
 
 /**
  * Fetches all posts with their full content from Firestore.
@@ -39,28 +45,29 @@ const db: Firestore = getFirestore(app);
 export const getAllPosts = async (): Promise<PostDetail[]> => {
   try {
     const postsCollection = collection(db, "posts");
-    // Order by publishDate descending. Ensure 'publishDate' field exists and is a Timestamp.
-    const q = query(postsCollection, orderBy("publishDate", "desc"));
+    // 追加: isPublic が true のみ取得
+    const q = query(
+      postsCollection,
+      where("isPublic", "==", true),
+      orderBy("publishDate", "desc")
+    );
     const querySnapshot = await getDocs(q);
 
     const posts: PostDetail[] = querySnapshot.docs.map(docSnap => {
       const data = docSnap.data();
       return {
-        slug: data.slug, // Using document ID as slug
+        slug: data.slug,
         title: data.title || "untitled",
         publishDate: (data.publishDate as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
         updateDate: (data.updateDate as Timestamp)?.toDate().toISOString(),
         category: data.category || "uncategorized",
-        content: data.content || "", // Add content field
-        // tags: data.tags || [], // If you add tags later
+        content: data.content || "",
       };
     });
     
     return posts;
   } catch {
-    // Depending on error handling strategy, you might throw the error,
-    // return an empty array, or return a specific error object.
-    return []; 
+    return [];
   }
 };
 
@@ -71,7 +78,12 @@ export const getAllPosts = async (): Promise<PostDetail[]> => {
 export const getPostBySlug = async (slug: string): Promise<PostDetail | null> => {
   try {
     const postsCollection = collection(db, "posts");
-    const q = query(postsCollection, where("slug", "==", slug));
+    // 追加: isPublic が true のみ取得
+    const q = query(
+      postsCollection,
+      where("slug", "==", slug),
+      where("isPublic", "==", true)
+    );
     const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
