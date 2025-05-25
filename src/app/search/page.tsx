@@ -55,11 +55,7 @@ export const SearchResultsPageContent: React.FC = () => {
   }, [query, fuseInstance]);
 
   if (loading) {
-    return <div>Loading posts...</div>;
-  }
-
-  if (!query) {
-    return <div>Please enter a search term.</div>;
+    return <div>読み込み中...</div>;
   }
 
   return (
@@ -69,11 +65,18 @@ export const SearchResultsPageContent: React.FC = () => {
         <SearchBox />
       </div>
       <hr />
-      {searchResults.length === 0 ? (
-        <p>&quot;{query}&quot; の検索結果はありませんでした。</p>
-      ) : (
-        <PostList posts={searchResults} />
-      )}
+      <div className='p-4'>
+        {searchResults.length === 0 ? (
+          <p>&quot;{query}&quot; の検索結果はありませんでした。</p>
+        ) : (
+          <div>
+            <p>
+              &quot;{query}&quot; の検索結果は {searchResults.length} 件です：
+            </p>
+            <PostList posts={searchResults} />
+          </div>
+        )}
+      </div>
     </>
   );
 };

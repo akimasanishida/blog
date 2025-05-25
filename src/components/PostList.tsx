@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import type { PostListItem } from '../types/post'; // Adjusted path
+import { CalendarPlus, ClockClockwise } from "@/components/Icons"; // Adjusted import path
+import { formatJpDate } from '@/lib/format';
 
 interface PostListProps {
   posts: PostListItem[];
@@ -19,16 +21,20 @@ const PostList: React.FC<PostListProps> = ({ posts }) => {
               {post.title}
             </Link>
           </h2>
-          <div className="text-sm text-muted-foreground mb-2">
-            <span>Published on: {new Date(post.publishDate).toLocaleDateString()}</span>
+          <div className="text-sm text-muted-foreground flex items-center">
+            <CalendarPlus className='inline-block w-5 h-5'/> <span className="ml-1">{formatJpDate(post.publishDate)}</span>
             {post.updateDate && (
               <span className="ml-4">
-                Updated on: {new Date(post.updateDate).toLocaleDateString()}
+                <ClockClockwise className='inline-block w-5 h-5'/> <span className="ml-1">{formatJpDate(post.updateDate)}</span>
               </span>
             )}
           </div>
-          <div className="text-sm text-foreground">
-            Category: <span className="font-bold">{post.category}</span>
+          <div className="text-sm text-muted-foreground">
+            カテゴリー：<span className="font-bold">
+              <Link href={`/categories/${encodeURIComponent(post.category.toLowerCase())}`} className='!text-muted-foreground'>
+              {post.category}
+            </Link>
+            </span>
           </div>
         </li>
       ))}

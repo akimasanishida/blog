@@ -101,11 +101,11 @@ const Footer = () => {
       <div className='flex justify-around mb-8 flex-wrap'>
         {/* Column 1: Archives */}
         <div className='flex-1 min-w-[200px] mb-4'>
-          <h3 className='text-lg mb-2'>Archives</h3>
+          <h3 className='text-lg mb-2'>アーカイブ</h3>
           {loading ? (
-            <p className='text-sm'>Loading archives...</p>
+            <p className='text-sm'>読み込み中...</p>
           ) : archiveData.size === 0 ? (
-            <p className='text-sm'>No archives available.</p>
+            <p className='text-sm'>利用可能なアーカイブはありません。</p>
           ) : (
             <ul className='list-none p-0 text-sm'>
               {Array.from(archiveData.keys()).sort((a, b) => b.localeCompare(a)).map(year => (
@@ -117,7 +117,7 @@ const Footer = () => {
                       </span>
                     </div>
                     <Link href={`/archives/${year}`} className='no-underline font-bold'>
-                      {year}
+                      {year}年
                     </Link>
                   </div>
                   {expandedYears.has(year) && (
@@ -125,7 +125,8 @@ const Footer = () => {
                       {archiveData.get(year)?.map(month => (
                         <li key={month} className='mb-1'>
                           <Link href={`/archives/${year}/${month}`} className='no-underline'>
-                            {getMonthName(month)} ({month})
+                            {/* example: 5月, 10月 (japanese). eliminate 0 padding */}
+                            {parseInt(month, 10)}月
                           </Link>
                         </li>
                       ))}
@@ -139,11 +140,11 @@ const Footer = () => {
 
         {/* Column 2: Categories */}
         <div className='flex-1 min-w-[200px] ml-4 mr-4 mb-4'>
-          <h3 className='text-lg mb-2'>Categories</h3>
+          <h3 className='text-lg mb-2'>カテゴリー</h3>
           {loading ? (
-            <p className='text-sm'>Loading categories...</p>
+            <p className='text-sm'>読み込み中...</p>
           ) : categories.length === 0 ? (
-            <p className='text-sm'>No categories available.</p>
+            <p className='text-sm'>利用可能なカテゴリーはありません。</p>
           ) : (
             <ul className='list-none p-0 text-sm'>
               {categories.map(category => (
@@ -153,7 +154,7 @@ const Footer = () => {
                     className='no-underline'
                   >
                     {/* Display original category name, e.g., "Web Development" */}
-                    {category.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                    {category}
                   </Link>
                 </li>
               ))}
@@ -163,7 +164,7 @@ const Footer = () => {
 
         {/* Column 3: Search */}
         <div className='flex-1 min-w-[200px] mb-4'>
-          <h3 className='text-lg mb-2'>Search</h3>
+          <h3 className='text-lg mb-2'>検索</h3>
           <SearchBox />
         </div>
       </div>

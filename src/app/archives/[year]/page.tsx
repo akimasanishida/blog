@@ -29,7 +29,7 @@ const YearlyArchivePage = async({ params }: { params: Promise<{ year: string }> 
   return (
     <>
       <h1>
-        Archives: {year_num}
+        アーカイブ：{year_num}年
       </h1>
       <PostList posts={filteredPosts} />
     </>

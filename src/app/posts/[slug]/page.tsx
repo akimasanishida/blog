@@ -1,8 +1,12 @@
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { getPostBySlug } from '@/lib/firebase'; // Updated import
 import { renderMarkdownToHTML } from '@/lib/markdown'; // Updated import
 import type { PostDetail } from '@/types/post'; // Updated import
 // import { getAllPosts } from '@/lib/firebase'; // For generateStaticParams
+import { CalendarPlus, ClockClockwise } from '@/components/Icons'; // Adjusted import path
+import { formatJpDate } from '@/lib/format'; // Adjusted import path
+import SocialShareLinks from '@/components/SocialShareLinks';
 
 interface PostPageProps {
   params: {
@@ -31,15 +35,21 @@ const PostPage = async ({ params }: {
     <article className='prose dark:prose-invert'>
       <header className='mb-6'>
         <h1 className='text-4xl mb-2'>{post.title}</h1>
-        <div className='text-sm'>
-          <span>Published on: {new Date(post.publishDate).toLocaleDateString()}</span>
+        <div className='text-sm text-muted-foreground flex items-center'>
+          <span><CalendarPlus className='inline-block w-5 h-5'/> <span className="ml-1">{formatJpDate(post.publishDate)}</span></span>
           {post.updateDate && (
             <span className='ml-4'>
-              Updated on: {new Date(post.updateDate).toLocaleDateString()}
+              <ClockClockwise className='inline-block w-5 h-5'/> <span className="ml-1">{formatJpDate(post.updateDate)}</span>
             </span>
           )}
-          <span className='ml-4'>
-            Category: <span className='font-bold'>{post.category}</span>
+        </div>
+        <div className='text-sm text-muted-foreground'>
+          <span>
+            カテゴリー：<span className='font-bold'>
+              <Link href={`/categories/${encodeURIComponent(post.category.toLowerCase())}`} className='!text-muted-foreground'>
+                {post.category}
+              </Link>
+            </span>
           </span>
         </div>
       </header>
@@ -63,8 +73,8 @@ const PostPage = async ({ params }: {
       */}
 
       <footer className='mt-12 pt-4 border-t text-sm'>
-        <p>Thank you for reading!</p>
-        {/* Placeholder for related posts or social sharing */}
+        <p className='text-muted-foreground'>この記事を共有する:</p>
+        <SocialShareLinks title={post.title} />
       </footer>
     </article>
   );

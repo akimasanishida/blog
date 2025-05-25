@@ -8,6 +8,7 @@ import {
     getDoc, 
     query, 
     orderBy, 
+    where,
     Timestamp,
     Firestore
 } from 'firebase/firestore';
@@ -32,8 +33,6 @@ if (!getApps().length) {
 }
 const db: Firestore = getFirestore(app);
 
-console.log("Firebase app initialized with projectId:", firebaseConfig.projectId);
-
 /**
  * Fetches all posts with their full content from Firestore.
  * Returns a promise resolving to an array of PostDetail objects,
@@ -41,7 +40,6 @@ console.log("Firebase app initialized with projectId:", firebaseConfig.projectId
  */
 export const getAllPosts = async (): Promise<PostDetail[]> => {
   try {
-    console.log("Fetching all posts from Firestore...");
     const postsCollection = collection(db, "posts");
     // Order by publishDate descending. Ensure 'publishDate' field exists and is a Timestamp.
     const q = query(postsCollection, orderBy("publishDate", "desc"));
@@ -50,7 +48,7 @@ export const getAllPosts = async (): Promise<PostDetail[]> => {
     const posts: PostDetail[] = querySnapshot.docs.map(docSnap => {
       const data = docSnap.data();
       return {
-        slug: docSnap.id, // Using document ID as slug
+        slug: data.slug, // Using document ID as slug
         title: data.title || "Untitled",
         publishDate: (data.publishDate as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
         updateDate: (data.updateDate as Timestamp)?.toDate().toISOString(),
@@ -60,10 +58,8 @@ export const getAllPosts = async (): Promise<PostDetail[]> => {
       };
     });
     
-    console.log(`Fetched ${posts.length} posts.`);
     return posts;
   } catch (error) {
-    console.error("Error fetching all posts:", error);
     // Depending on error handling strategy, you might throw the error,
     // return an empty array, or return a specific error object.
     return []; 
@@ -76,29 +72,26 @@ export const getAllPosts = async (): Promise<PostDetail[]> => {
  */
 export const getPostBySlug = async (slug: string): Promise<PostDetail | null> => {
   try {
-    console.log(`Fetching post with slug (doc ID): ${slug} from Firestore...`);
-    const postDocRef = doc(db, "posts", slug);
-    const docSnap = await getDoc(postDocRef);
+    const postsCollection = collection(db, "posts");
+    const q = query(postsCollection, where("slug", "==", slug));
+    const querySnapshot = await getDocs(q);
 
-    if (docSnap.exists()) {
+    if (!querySnapshot.empty) {
+      const docSnap = querySnapshot.docs[0];
       const data = docSnap.data();
       const post: PostDetail = {
-        slug: docSnap.id,
+        slug: data.slug,
         title: data.title || "Untitled",
         publishDate: (data.publishDate as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
         updateDate: (data.updateDate as Timestamp)?.toDate().toISOString(),
         category: data.category || "Uncategorized",
-        content: data.content || "", // Markdown content
-        // tags: data.tags || [], // If you add tags later
+        content: data.content || "",
       };
-      console.log(`Fetched post: ${post.title}`);
       return post;
     } else {
-      console.log(`No post found with slug: ${slug}`);
       return null;
     }
   } catch (error) {
-    console.error(`Error fetching post with slug ${slug}:`, error);
-    return null; // Or throw error, based on strategy
+    return null;
   }
 };

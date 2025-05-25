@@ -50,38 +50,3 @@ export const renderMarkdownToHTML = async (markdownContent: string): Promise<Mar
     frontmatterData,
   };
 };
-
-// Example Usage (can be removed or kept for testing)
-// (async () => {
-//   const markdown = `
-// ---
-// title: Test Post
-// date: 2024-03-21
-// ---
-// # Hello World
-// This is a test paragraph with some *emphasis* and **bold** text.
-// And a :tada: emoji!
-//
-// ## Math
-// Inline math: $E = mc^2$
-// Display math:
-// $$
-// \int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2}
-// $$
-//
-// ## Code Block (JavaScript)
-// \`\`\`javascript
-// function greet(name) {
-//   console.log(\`Hello, \${name}!\`);
-// }
-// greet('Developer');
-// \`\`\`
-//   `;
-//   try {
-//     const { contentHtml, frontmatterData } = await renderMarkdownToHTML(markdown);
-//     console.log('Frontmatter:', frontmatterData);
-//     console.log('Rendered HTML:', contentHtml);
-//   } catch (error) {
-//     console.error('Error rendering markdown:', error);
-//   }
-// })();

@@ -9,7 +9,7 @@ export default async function Home() {
   return (
     <>
       <h1>
-        Recent Posts
+        投稿一覧
       </h1>
       <PostList posts={posts} />
     </>

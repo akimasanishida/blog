@@ -8,24 +8,20 @@ interface CategoryPageProps {
   };
 }
 
-const CategoryPage: React.FC<CategoryPageProps> = async ({ params }) => {
-  // Decode the category name from the URL (e.g., "Web%20Development" -> "Web Development")
-  const decodedCategory = decodeURIComponent(params.category);
+const CategoryPage = async ({ params }: {
+  params: Promise<{ category: string }>;
+}) => {
+  const { category } = await params; // Await the promise to get the actual values
 
   const allPosts = await getAllPosts(); // Fetch all posts
   const filteredPosts = allPosts.filter(post => 
-    post.category.toLowerCase() === decodedCategory.toLowerCase()
+    post.category.toLowerCase() === category.toLowerCase()
   );
-
-  // Capitalize the first letter of each word in the category for display
-  const displayCategoryName = decodedCategory.split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
 
   return (
     <>
       <h1>
-        Category: {displayCategoryName}
+        カテゴリー：{category}
       </h1>
       <PostList posts={filteredPosts} />
     </>

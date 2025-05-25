@@ -36,12 +36,10 @@ const MonthlyArchivePage = async ({ params }: {
     return postDate.getUTCFullYear() === year_num && (postDate.getUTCMonth() + 1) === month_num;
   });
 
-  const monthName = getMonthName(month_num);
-
   return (
     <>
       <h1>
-        Archives: {monthName} {year_num}
+        アーカイブ：{year_num}年{month_num}月
       </h1>
       <PostList posts={filteredPosts} />
     </>
