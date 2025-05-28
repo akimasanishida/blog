@@ -15,6 +15,7 @@ import {
 import {
   ref, uploadBytesResumable, getDownloadURL, listAll
 } from 'firebase/storage';
+import ImageDetailOverlay, { ImageInfo as OverlayImageInfo } from '@/components/ImageDetailOverlay'; // Import the new component
 
 // Define the Post interface
 interface PostData {
@@ -28,12 +29,14 @@ interface PostData {
   isPublic: boolean;
 }
 
-// Interface for images in the panel
-interface ImageInfo {
+// Interface for images in the panel - This should match OverlayImageInfo
+// Ensure ImageInfo here is compatible with OverlayImageInfo. For now, they are structurally identical.
+interface ImageInfo { // This is used for the 'images' state array
   url: string;
   name: string;
   refPath: string;
 }
+
 
 const initialPostState: PostData = {
   title: '',
@@ -53,6 +56,7 @@ function AdminPostPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [post, setPost] = useState<PostData>(initialPostState);
+  const [initialPost, setInitialPost] = useState<PostData>(initialPostState); // For change detection
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -62,6 +66,7 @@ function AdminPostPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [imageError, setImageError] = useState<string | null>(null);
   const [isLoadingImages, setIsLoadingImages] = useState(true);
+  const [selectedImageForOverlay, setSelectedImageForOverlay] = useState<OverlayImageInfo | null>(null); // Use OverlayImageInfo here
 
   useEffect(() => {
     if (postId) {
@@ -73,10 +78,13 @@ function AdminPostPage() {
           const docSnap = await getDoc(postRef);
           if (docSnap.exists()) {
             const data = docSnap.data() as PostData;
-            setPost({ ...initialPostState, ...data, id: docSnap.id });
+            const fullPostData = { ...initialPostState, ...data, id: docSnap.id };
+            setPost(fullPostData);
+            setInitialPost(fullPostData); // Store initial data
           } else {
             setError("Post not found.");
             setPost(initialPostState);
+            setInitialPost(initialPostState);
           }
         } catch (err) {
           console.error("Error fetching post:", err);
@@ -88,10 +96,27 @@ function AdminPostPage() {
       fetchPost();
     } else {
       setPost(initialPostState);
+      setInitialPost(initialPostState);
       setIsEditing(false);
       setIsLoading(false);
     }
   }, [postId]);
+
+  // Unsaved changes warning
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      const hasUnsavedChanges = JSON.stringify(post) !== JSON.stringify(initialPost);
+      if (hasUnsavedChanges) {
+        event.preventDefault();
+        event.returnValue = ''; // Required for Chrome
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [post, initialPost]);
 
   useEffect(() => {
     fetchImages();
@@ -129,10 +154,11 @@ function AdminPostPage() {
 
   const handleSlugChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
-    const sanitizedSlug = value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    // Allow manual slug editing, sanitize on save or blur if needed, or keep as is.
+    // For now, direct update, sanitization will be part of save.
     setPost(prevPost => ({
       ...prevPost,
-      slug: sanitizedSlug,
+      slug: value, // Allow more flexible input, sanitize before saving
     }));
   };
 
@@ -149,6 +175,10 @@ function AdminPostPage() {
     setTimeout(() => {
       textarea.selectionStart = textarea.selectionEnd = start + markdown.length;
     }, 0);
+  };
+
+  const handleImageClickInPanel = (image: OverlayImageInfo) => { // Parameter type changed to OverlayImageInfo
+    setSelectedImageForOverlay(image);
   };
 
   const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -184,7 +214,7 @@ function AdminPostPage() {
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
           const newImage: ImageInfo = { url: downloadURL, name: fileName, refPath: uploadTask.snapshot.ref.fullPath };
           setImages(prevImages => [...prevImages, newImage].sort((a, b) => a.name.localeCompare(b.name)));
-          handleImageClickToInsert(newImage);
+          setSelectedImageForOverlay(newImage); // Show overlay instead of direct insert
         } catch (err) {
           console.error("Error getting download URL or updating image list:", err);
           setImageError("Upload succeeded but failed to update image list or get URL.");
@@ -199,20 +229,38 @@ function AdminPostPage() {
     );
   };
 
-  const handleSave = async () => {
+  const processSave = async (
+    action: 'publish' | 'update' | 'saveDraft'
+  ) => {
     setError(null);
-    if (!post.slug) {
+
+    // Sanitize slug before validation and saving
+    const sanitizedSlug = post.slug.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    if (!sanitizedSlug) {
       setError("スラッグは必須です。 (Slug is required.)");
       return;
     }
-    if (!post.title) {
+    const currentPostData = { ...post, slug: sanitizedSlug };
+
+    if (!currentPostData.title) {
       setError("タイトルは必須です。 (Title is required.)");
       return;
     }
+
+    // Slug change warning for existing posts
+    if (isEditing && postId && currentPostData.slug !== initialPost.slug) {
+      const confirmSlugChange = window.confirm(
+        "スラッグを変更すると、既存のURLが無効になる可能性があります。本当に変更しますか？ (Changing the slug might break existing URLs. Are you sure you want to change it?)"
+      );
+      if (!confirmSlugChange) {
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
       const postsCollection = collection(db, "posts");
-      const slugQuery = query(postsCollection, where("slug", "==", post.slug));
+      const slugQuery = query(postsCollection, where("slug", "==", currentPostData.slug));
       const querySnapshot = await getDocs(slugQuery);
       let slugExists = false;
       if (!querySnapshot.empty) {
@@ -223,38 +271,97 @@ function AdminPostPage() {
             }
           });
         } else {
+          // New post, or slug changed to an existing one
           slugExists = true;
         }
       }
+
       if (slugExists) {
-        setError(`スラッグ "${post.slug}" は既に存在します。別のスラッグを選択してください。 (Slug "${post.slug}" already exists. Please choose another.)`);
+        setError(`スラッグ "${currentPostData.slug}" は既に存在します。別のスラッグを選択してください。 (Slug "${currentPostData.slug}" already exists. Please choose another.)`);
         setIsSaving(false);
         return;
       }
-      const dataToSave: Omit<PostData, 'id'> & { updateDate: Timestamp, publishDate?: Timestamp } = {
-        title: post.title,
-        content: post.content,
-        slug: post.slug,
-        category: post.category,
-        isPublic: post.isPublic,
+
+      let dataToSave: Partial<PostData> & { updateDate: Timestamp; publishDate?: Timestamp | null } = {
+        title: currentPostData.title,
+        content: currentPostData.content,
+        slug: currentPostData.slug,
+        category: currentPostData.category,
         updateDate: serverTimestamp() as Timestamp,
       };
+
+      switch (action) {
+        case 'publish':
+          dataToSave.isPublic = true;
+          if (!isEditing) { // New post
+            dataToSave.publishDate = serverTimestamp() as Timestamp;
+          } else { // Existing draft being published
+            dataToSave.publishDate = initialPost.publishDate || serverTimestamp() as Timestamp;
+          }
+          break;
+        case 'update': // Existing public post
+          dataToSave.isPublic = true;
+          dataToSave.publishDate = initialPost.publishDate; // Keep existing publish date
+          break;
+        case 'saveDraft':
+          dataToSave.isPublic = false;
+          if (!isEditing) { // New post, saving as draft
+            dataToSave.publishDate = null;
+          } else { // Existing draft, or existing public post being reverted to draft
+            dataToSave.publishDate = initialPost.publishDate || null; // Keep if it existed
+          }
+          break;
+      }
+      
+      // Ensure updateDate is always set
+      dataToSave.updateDate = serverTimestamp() as Timestamp;
+
+      let newPostRefId: string | null = null;
+
       if (isEditing && postId) {
         const postRef = doc(db, "posts", postId);
-        if (post.isPublic && !post.publishDate) {
-          dataToSave.publishDate = serverTimestamp() as Timestamp;
-        } else if (post.publishDate) {
-          dataToSave.publishDate = post.publishDate;
-        }
         await updateDoc(postRef, dataToSave);
-        alert("投稿を更新しました！ (Post updated successfully!)");
-      } else {
-        dataToSave.publishDate = serverTimestamp() as Timestamp;
-        dataToSave.isPublic = true;
+      } else { // New post
         const newPostRef = await addDoc(collection(db, "posts"), dataToSave);
-        alert("投稿を作成しました！ (Post created successfully!)");
-        router.push(`/admin/post?id=${newPostRef.id}`);
+        newPostRefId = newPostRef.id;
       }
+
+      // Synchronize local state (post and initialPost) after successful save
+      const currentSavedId = (isEditing && postId) ? postId : newPostRefId!;
+      let synchronizedPostState = {
+        ...currentPostData, // Contains latest title, content, category, and SANITIZED slug
+        ...dataToSave,      // Contains isPublic, and publishDate/updateDate (actual values or serverTimestamp sentinels)
+        id: currentSavedId,
+      };
+
+      // Replace serverTimestamp() sentinels with client-side Timestamp.now()
+      // for immediate consistency in 'post' and 'initialPost' states.
+      synchronizedPostState.updateDate = Timestamp.now(); // updateDate is always new
+
+      if (dataToSave.publishDate && !(dataToSave.publishDate instanceof Timestamp) && dataToSave.publishDate !== null) {
+        // If publishDate in dataToSave was a serverTimestamp() sentinel
+        synchronizedPostState.publishDate = Timestamp.now();
+      } else {
+        // If publishDate was an actual Timestamp or null, it's already correct in dataToSave
+        synchronizedPostState.publishDate = dataToSave.publishDate;
+      }
+      
+      // Ensure publishDate is null for new drafts, as dataToSave.publishDate would be null from switch case
+      if (action === 'saveDraft' && !isEditing) {
+        synchronizedPostState.publishDate = null;
+      }
+
+
+      setPost(synchronizedPostState);
+      setInitialPost(synchronizedPostState);
+
+      if (!isEditing && newPostRefId) {
+        alert("投稿を作成しました！ (Post created successfully!)");
+        router.push(`/admin/post?id=${newPostRefId}`);
+      } else if (isEditing) {
+        alert("投稿を更新しました！ (Post updated successfully!)");
+      }
+
     } catch (err) {
       console.error("Error saving post:", err);
       setError("投稿の保存に失敗しました。 (Failed to save post.)");
@@ -276,6 +383,17 @@ function AdminPostPage() {
       <div className="flex flex-col md:flex-row gap-8">
         {/* Left Pane */}
         <div className="flex-1 space-y-8 flex-shrink-0 md:w-2/3 lg:w-3/4">
+          <ImageDetailOverlay
+            image={selectedImageForOverlay}
+            isOpen={!!selectedImageForOverlay}
+            onClose={() => setSelectedImageForOverlay(null)}
+            onInsert={(imageToInsert) => {
+              handleImageClickToInsert(imageToInsert);
+              // setSelectedImageForOverlay(null); // Already handled by onInsert in overlay component if desired, or here
+            }}
+            showInsertButton={true}
+          />
+
           <div className='flex-1 space-y-6'>
             <div>
               <label htmlFor="postTitle" className="block text-sm font-medium text-foreground mb-2">タイトル</label>
@@ -285,7 +403,7 @@ function AdminPostPage() {
                 value={post.title}
                 onChange={handleInputChange}
                 placeholder="タイトルを入力"
-                disabled={isSaving}
+                disabled={isSaving || isUploading}
               />
             </div>
             <div>
@@ -303,10 +421,47 @@ function AdminPostPage() {
               />
             </div>
           </div>
-          <div className="flex justify-end">
-            <Button size="lg" onClick={handleSave} disabled={isSaving || isUploading}>
-              {isSaving ? (isEditing ? "更新中..." : "公開中...") : (isEditing ? "更新する" : "公開する")}
+          <div className="flex justify-end space-x-2 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (post.id && post.slug) {
+                  window.open(`/posts/${post.slug}`, '_blank');
+                } else {
+                  alert("Please save the post first to preview.");
+                }
+              }}
+              disabled={isSaving || isUploading || !post.id || !post.slug}
+            >
+              Preview
             </Button>
+            {(!postId || (postId && !post.isPublic)) && (
+              <Button
+                size="lg"
+                onClick={() => processSave('saveDraft')}
+                disabled={isSaving || isUploading}
+              >
+                {isSaving ? "Saving Draft..." : "Save Draft"}
+              </Button>
+            )}
+            {(!postId || (postId && !post.isPublic)) && (
+              <Button
+                size="lg"
+                onClick={() => processSave('publish')}
+                disabled={isSaving || isUploading}
+              >
+                {isSaving ? "Publishing..." : "Publish"}
+              </Button>
+            )}
+            {(postId && post.isPublic) && (
+              <Button
+                size="lg"
+                onClick={() => processSave('update')}
+                disabled={isSaving || isUploading}
+              >
+                {isSaving ? "Updating..." : "Update"}
+              </Button>
+            )}
           </div>
         </div>
         {/* Right Sidebar */}
@@ -317,7 +472,7 @@ function AdminPostPage() {
               id="postSlug"
               name="slug"
               value={post.slug}
-              onChange={handleSlugChange}
+              onChange={handleSlugChange} // Using direct input change, sanitization on save
               placeholder="例: my-first-post"
               disabled={isSaving || isUploading}
             />
@@ -356,8 +511,8 @@ function AdminPostPage() {
                   <div
                     key={img.url}
                     className="cursor-pointer border rounded-md overflow-hidden hover:ring-2 ring-blue-500"
-                    onClick={() => handleImageClickToInsert(img)}
-                    title={`「${img.name}」を挿入`}
+                    onClick={() => handleImageClickInPanel(img)} // Changed this
+                    title={`「${img.name}」を選択`}
                   >
                     <Image
                       src={img.url}
