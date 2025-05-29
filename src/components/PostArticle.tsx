@@ -1,5 +1,5 @@
 // src/components/PostArticle.tsx
-'use server';
+// 'use server'; // Removed for diagnostic step 3
 
 import { renderMarkdownToHTML } from '@/lib/markdown';
 import { formatJpDate } from '@/lib/format';
@@ -21,7 +21,8 @@ interface PostArticleProps {
   post: PostDataForArticle;
 }
 
-export default async function PostArticle({ post }: PostArticleProps) {
+// Changed to synchronous for diagnostic sub-step 2b
+export default function PostArticle({ post }: PostArticleProps) {
   if (!post) {
     return (
       <div className="text-center py-10">
@@ -30,7 +31,9 @@ export default async function PostArticle({ post }: PostArticleProps) {
     );
   }
 
-  const { contentHtml } = await renderMarkdownToHTML(post.content || "");
+  // Commented out for diagnostic sub-step 2b
+  // const { contentHtml } = await renderMarkdownToHTML(post.content || "");
+  const diagnosticText = "Markdown processing completely bypassed.";
 
   let displayDate: string | null = null;
   if (post.publishDate) {
@@ -74,8 +77,7 @@ export default async function PostArticle({ post }: PostArticleProps) {
         )}
       </header>
       <div>
-        <p>This is a static test paragraph replacing dangerouslySetInnerHTML.</p>
-        <p>Markdown processing still happened, but its output is not used here.</p>
+        <p>{diagnosticText}</p>
       </div>
     </article>
   );
