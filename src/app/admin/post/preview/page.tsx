@@ -1,8 +1,8 @@
 // src/app/admin/post/preview/page.tsx
 "use client";
 
-import { useEffect, useState, Suspense } from 'react'; // Ensure Suspense is imported
-import PostArticle from '@/components/PostArticle'; 
+import { useEffect, useState } from 'react'; // Ensure Suspense is imported
+import PostArticle from '@/components/PostArticle';
 import { Timestamp } from 'firebase/firestore'; // Or other relevant date types
 
 // Define a simple PostData interface for the preview data
@@ -13,7 +13,7 @@ interface PreviewPostData {
   content: string;
   category?: string;
   publishDate?: string | Date | Timestamp; // Allow flexibility for data from sessionStorage
-                                        // PostArticle's formatDate can handle string or Date.
+  // PostArticle's formatDate can handle string or Date.
 }
 
 const SESSION_STORAGE_KEY = 'postPreviewData';
@@ -66,10 +66,6 @@ export default function PostPreviewPage() {
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <Suspense fallback={<div className="container mx-auto p-4 text-center">Processing content...</div>}>
-        <PostArticle post={postData} />
-      </Suspense>
-    </div>
+    <PostArticle post={postData} />
   );
 }

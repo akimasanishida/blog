@@ -1,23 +1,36 @@
 // src/components/PostArticle.tsx
-'use server';
+'use client';
 
+import { useEffect, useState } from 'react';
 import { renderMarkdownToHTML } from '@/lib/markdown';
-import { formatJpDate } from '@/lib/format';
-// import { CalendarPlus } from '@/components/Icons'; // Temporarily commented out for diagnostics
 import { Timestamp } from 'firebase/firestore';
+import ArticleBody from './ArticleBody';
 
 export interface PostDataForArticle {
   title: string;
   content: string; // Raw Markdown content
   category?: string;
   publishDate?: string | Date | Timestamp;
+  updateDate?: string | Date | Timestamp;
 }
 
 interface PostArticleProps {
   post: PostDataForArticle;
 }
 
-export default async function PostArticle({ post }: PostArticleProps) {
+export default function PostArticle({ post }: PostArticleProps) {
+  const [contentHtml, setContentHtml] = useState<string>('');
+
+  useEffect(() => {
+    let isMounted = true;
+    async function render() {
+      const { contentHtml } = await renderMarkdownToHTML(post.content || "");
+      if (isMounted) setContentHtml(contentHtml);
+    }
+    render();
+    return () => { isMounted = false; };
+  }, [post.content]);
+
   if (!post) {
     return (
       <div className="text-center py-10">
@@ -26,62 +39,30 @@ export default async function PostArticle({ post }: PostArticleProps) {
     );
   }
 
-  const { contentHtml } = await renderMarkdownToHTML(post.content || "");
+  // publishDate, updateDate の型を string | Date | undefined に揃える
+  let publishDate: string | Date | undefined = undefined;
+  if (post.publishDate instanceof Timestamp) {
+    publishDate = post.publishDate.toDate();
+  } else if (post.publishDate !== undefined) {
+    publishDate = post.publishDate as string | Date;
+  }
 
-  // Helper logic to prepare date for formatJpDate
-  let finalDateToDisplay: string | null = null;
-  if (post.publishDate) {
-    let dateObject: Date | undefined = undefined;
-    if (post.publishDate instanceof Timestamp) {
-      dateObject = post.publishDate.toDate();
-    } else if (typeof post.publishDate === 'string') {
-      const parsedDate = new Date(post.publishDate);
-      if (!isNaN(parsedDate.getTime())) {
-        dateObject = parsedDate;
-      } else {
-        // If string is not a valid date, we might display it as is or not at all.
-        // For this restoration, let's try to format if possible, else show string.
-        // However, formatJpDate expects a Date object or a string that can be parsed into one.
-        // So, if it's an unparsable string, we'll not use formatJpDate.
-        // The example implies formatJpDate can take a string, but its current lib/format.ts expects string that new Date() can parse.
-        // Let's stick to passing a Date object to formatJpDate.
-        // If it's a non-date string, we'll handle it by not calling formatJpDate.
-        // For preview, it's likely an ISO string, which is parsable.
-      }
-    } else if (post.publishDate instanceof Date) {
-      dateObject = post.publishDate;
-    }
-
-    if (dateObject) {
-      finalDateToDisplay = formatJpDate(dateObject.toISOString()); // formatJpDate takes string
-    } else if (typeof post.publishDate === 'string') {
-        // If it was a string but not parsable into a valid Date object
-        finalDateToDisplay = post.publishDate; // Display the original string
-    }
+  let updateDate: string | Date | undefined = undefined;
+  if (post.updateDate instanceof Timestamp) {
+    updateDate = post.updateDate.toDate();
+  } else if (post.updateDate !== undefined) {
+    updateDate = post.updateDate as string | Date;
   }
 
   return (
-    <article className='prose dark:prose-invert max-w-full'>
-      <header className='mb-6 pb-4 border-b'>
-        <h1 className='text-4xl mb-2'>{post.title || "Untitled Post"}</h1>
-        {(post.category || finalDateToDisplay) && (
-          <div className='text-sm text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1'>
-            {finalDateToDisplay && (
-              <span className='flex items-center'>
-                <span className='mr-1'>[DateIcon]</span> {/* Placeholder for CalendarPlus */}
-                {finalDateToDisplay}
-              </span>
-            )}
-            {post.category && (
-              <span className='flex items-center'>
-                <span>Category: </span>
-                <span className='font-bold ml-1'>{post.category}</span>
-              </span>
-            )}
-          </div>
-        )}
-      </header>
-      <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
-    </article>
+    <ArticleBody
+      title={post.title}
+      contentHtml={contentHtml}
+      category={post.category}
+      publishDate={publishDate}
+      updateDate={updateDate}
+      showCategoryLink={false}
+      showShareLinks={false}
+    />
   );
 }

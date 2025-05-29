@@ -482,12 +482,33 @@ function AdminPostPage() {
                     publishDateForPreview = new Date().toISOString();
                   }
 
+                  // updateDateもISO文字列で渡す
+                  let updateDateForPreview: string | null = null;
+                  if (post.updateDate) {
+                    if (typeof post.updateDate === 'string') {
+                      const d = new Date(post.updateDate);
+                      if (!isNaN(d.getTime())) {
+                        updateDateForPreview = d.toISOString();
+                      } else {
+                        updateDateForPreview = new Date().toISOString();
+                      }
+                    } else if ('toDate' in post.updateDate && typeof post.updateDate.toDate === 'function') {
+                      updateDateForPreview = post.updateDate.toDate().toISOString();
+                    } else if (post.updateDate instanceof Date) {
+                      updateDateForPreview = post.updateDate.toISOString();
+                    } else {
+                      updateDateForPreview = new Date().toISOString();
+                    }
+                  } else {
+                    updateDateForPreview = new Date().toISOString();
+                  }
+
                   const previewData = {
-                    title: post.title || "Untitled Post", // Provide a fallback for title
+                    title: post.title || "Untitled Post",
                     content: post.content,
-                    category: post.category || "", // Provide a fallback for category
+                    category: post.category || "",
                     publishDate: publishDateForPreview,
-                    // Add any other relevant fields from the 'post' state that PostArticle might use
+                    updateDate: updateDateForPreview,
                   };
 
                   try {
