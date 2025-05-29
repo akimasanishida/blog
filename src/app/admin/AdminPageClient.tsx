@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from "@/components/ui/button";
@@ -55,10 +55,10 @@ function AdminPage() {
   const [isNextPageAvailable, setIsNextPageAvailable] = useState(true);
 
   // Extended fetchPosts to include sorting and pagination
-  const fetchPosts = async (
-    currentSortField: string = sortField, 
-    currentSortDirection: OrderByDirection = sortDirection,
-    pageDirection: "first" | "next" | "prev" = "first"
+  const fetchPosts = useCallback(async (
+    currentSortField: string, // Removed default values, they will be passed from call sites
+    currentSortDirection: OrderByDirection,
+    pageDirection: "first" | "next" | "prev"
   ) => {
     setLoading(true);
     setError(null);
@@ -130,11 +130,12 @@ function AdminPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [itemsPerPage, queryLastDoc, currentPage, pageDocCursors]); // Added dependencies
 
   useEffect(() => {
-    fetchPosts(sortField, sortDirection, "first");
-  }, [sortField, sortDirection]);
+    // Pass sortField and sortDirection explicitly
+    fetchPosts(sortField, sortDirection, "first"); 
+  }, [sortField, sortDirection, fetchPosts]); // Added fetchPosts
 
   const handleNewPost = () => {
     router.push('/admin/post');
@@ -197,13 +198,15 @@ function AdminPage() {
   const handleNextPage = () => {
     if (isNextPageAvailable) {
       setCurrentPage(prev => prev + 1);
-      fetchPosts(sortField, sortDirection, "next");
+      // Pass sortField and sortDirection explicitly
+      fetchPosts(sortField, sortDirection, "next"); 
     }
   };
   const handlePrevPage = () => {
     if (currentPage > 1) {
       setCurrentPage(prev => prev - 1);
       setQueryLastDoc(pageDocCursors[currentPage - 2]);
+      // Pass sortField and sortDirection explicitly
       fetchPosts(sortField, sortDirection, "prev");
     }
   };
