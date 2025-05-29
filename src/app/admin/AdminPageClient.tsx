@@ -54,36 +54,50 @@ function AdminPage() {
   const [queryLastDoc, setQueryLastDoc] = useState<QueryDocumentSnapshot | null>(null);
   const [isNextPageAvailable, setIsNextPageAvailable] = useState(true);
 
-  // Extended fetchPosts to include sorting and pagination
+  // Refactored fetchPosts
   const fetchPosts = useCallback(async (
-    currentSortField: string, // Removed default values, they will be passed from call sites
-    currentSortDirection: OrderByDirection,
-    pageDirection: "first" | "next" | "prev"
+    fetchOptions: {
+      sortField: string;
+      sortDirection: OrderByDirection;
+      pageAction: "first" | "next" | "prev";
+      currentQueryLastDoc: QueryDocumentSnapshot | null;
+      currentPage: number; // Current page number *being fetched*
+      currentPageDocCursors: (QueryDocumentSnapshot | null)[]; // Cursors array *at the time of call*
+    }
   ) => {
+    const { 
+      sortField: currentSortField, 
+      sortDirection: currentSortDirection, 
+      pageAction,
+      currentQueryLastDoc, // Use this instead of state queryLastDoc directly for 'next'
+      currentPage: pageToFetch,    // Use this instead of state currentPage directly for 'prev' logic
+      currentPageDocCursors      // Use this for 'prev' logic
+    } = fetchOptions;
+
     setLoading(true);
     setError(null);
     try {
       const postsCollectionRef = collection(db, "posts");
       let q;
       const baseQuery = query(postsCollectionRef, orderBy(currentSortField, currentSortDirection));
-      if (pageDirection === "first") {
-        setCurrentPage(1);
-        setPageDocCursors([null]);
+
+      if (pageAction === "first") {
+        // setCurrentPage(1) and setPageDocCursors([null]) are handled by the caller (main useEffect)
         q = query(baseQuery, limit(itemsPerPage));
-      } else if (pageDirection === "next" && queryLastDoc) {
-        q = query(baseQuery, startAfter(queryLastDoc), limit(itemsPerPage));
-      } else if (pageDirection === "prev" && currentPage > 1) {
-        const prevPageCursor = pageDocCursors[currentPage - 2];
-        if (prevPageCursor) {
-          q = query(baseQuery, startAfter(pageDocCursors[currentPage - 2]), limit(itemsPerPage));
-        } else {
+      } else if (pageAction === "next" && currentQueryLastDoc) {
+        q = query(baseQuery, startAfter(currentQueryLastDoc), limit(itemsPerPage));
+      } else if (pageAction === "prev" && pageToFetch > 0) { // pageToFetch is 1-indexed
+        const prevPageCursorTarget = currentPageDocCursors[pageToFetch - 1]; // Cursor for the page *before* the one we want to fetch
+        if (prevPageCursorTarget) { // if pageToFetch is 1, prevPageCursorTarget is pageDocCursors[0] which is null
+          q = query(baseQuery, startAfter(prevPageCursorTarget), limit(itemsPerPage));
+        } else { // Fetching the actual first page (pageToFetch = 1)
           q = query(baseQuery, limit(itemsPerPage));
         }
-      } else {
-        setCurrentPage(1);
-        setPageDocCursors([null]);
+      } else { // Fallback or unexpected pageAction
+        console.warn("fetchPosts called with invalid pageAction or parameters, fetching first page.", fetchOptions);
         q = query(baseQuery, limit(itemsPerPage));
       }
+
       const querySnapshot = await getDocs(q);
       const fetchedPosts: Post[] = querySnapshot.docs.map(docSnap => {
         const data = docSnap.data();
@@ -98,31 +112,41 @@ function AdminPage() {
         };
       });
       setPosts(fetchedPosts);
-      const lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
-      setQueryLastDoc(lastDoc || null);
-      if (pageDirection === "first") {
-        if (querySnapshot.docs.length === itemsPerPage) {
-          setPageDocCursors([null, lastDoc]);
-        } else {
-          setPageDocCursors([null]);
-        }
-      } else if (pageDirection === "next" && lastDoc) {
-        if (currentPage + 1 > pageDocCursors.length - 1) {
-          setPageDocCursors(prev => [...prev.slice(0, currentPage), lastDoc]);
-        } else {
-          setPageDocCursors(prev => {
+      const newLastDoc = querySnapshot.docs[querySnapshot.docs.length - 1] || null;
+      setQueryLastDoc(newLastDoc);
+
+      if (pageAction === "first") {
+        setPageDocCursors(newLastDoc ? [null, newLastDoc] : [null]);
+      } else if (pageAction === "next" && newLastDoc) {
+        // pageToFetch is the page number that was just fetched (e.g., if currentPage was 1, pageToFetch is 2)
+        // We need to store the cursor for this newly fetched page (pageToFetch)
+        // The cursor newLastDoc is the last document of pageToFetch.
+        // pageDocCursors should be 0-indexed for page numbers, so pageDocCursors[0] is for page 1 (null), pageDocCursors[1] is last doc of page 1.
+        // So, for page `p`, its last doc is at `pageDocCursors[p]`.
+        setPageDocCursors(prev => {
             const newCursors = [...prev];
-            newCursors[currentPage] = lastDoc;
+            if (pageToFetch < newCursors.length) {
+                newCursors[pageToFetch] = newLastDoc;
+            } else { // pageToFetch is beyond current known cursors
+                // Fill any gaps if necessary, though ideally this shouldn't happen with linear next
+                while(newCursors.length < pageToFetch) {
+                    newCursors.push(null); // Should ideally not happen
+                }
+                newCursors.push(newLastDoc);
+            }
             return newCursors;
-          });
-        }
+        });
       }
-      if (querySnapshot.docs.length < itemsPerPage) {
-        setIsNextPageAvailable(false);
+      // For 'prev', pageDocCursors should already be populated for the target page.
+      // We don't typically update pageDocCursors when navigating 'prev', as we are navigating to already known cursor states.
+
+      // Check if a next page is available from the current (pageToFetch)
+      if (newLastDoc && querySnapshot.docs.length === itemsPerPage) {
+        const nextCheckQuery = query(baseQuery, startAfter(newLastDoc), limit(1));
+        const nextCheckSnapshot = await getDocs(nextCheckQuery);
+        setIsNextPageAvailable(!nextCheckSnapshot.empty);
       } else {
-        const nextQuery = query(baseQuery, startAfter(lastDoc), limit(1));
-        const nextSnapshot = await getDocs(nextQuery);
-        setIsNextPageAvailable(!nextSnapshot.empty);
+        setIsNextPageAvailable(false);
       }
     } catch (err) {
       console.error("Error fetching posts:", err);
@@ -130,12 +154,22 @@ function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [itemsPerPage, queryLastDoc, currentPage, pageDocCursors]); // Added dependencies
+  }, [itemsPerPage, setPosts, setLoading, setError, setQueryLastDoc, setCurrentPage, setPageDocCursors, setIsNextPageAvailable]);
 
   useEffect(() => {
-    // Pass sortField and sortDirection explicitly
-    fetchPosts(sortField, sortDirection, "first"); 
-  }, [sortField, sortDirection, fetchPosts]); // Added fetchPosts
+    // Reset pagination state before fetching on sort change
+    setCurrentPage(1);
+    setQueryLastDoc(null);
+    setPageDocCursors([null]);
+    fetchPosts({
+      sortField: sortField,
+      sortDirection: sortDirection,
+      pageAction: "first",
+      currentQueryLastDoc: null,
+      currentPage: 1,
+      currentPageDocCursors: [null]
+    });
+  }, [sortField, sortDirection, fetchPosts]);
 
   const handleNewPost = () => {
     router.push('/admin/post');
@@ -165,17 +199,21 @@ function AdminPage() {
         isPublic: !currentIsPublic,
         updateDate: serverTimestamp()
       });
-      const currentCursorForPage = pageDocCursors[currentPage -1];
-      if (currentPage === 1) {
-        await fetchPosts(sortField, sortDirection, "first");
-      } else if (currentCursorForPage) {
-        setQueryLastDoc(pageDocCursors[currentPage -1]);
-        await fetchPosts(sortField, sortDirection, "next");
-      } else {
-        await fetchPosts(sortField, sortDirection, "first");
-      }
+      // Refetch the first page to reflect changes
+      setCurrentPage(1); 
+      setQueryLastDoc(null);
+      setPageDocCursors([null]);
+      await fetchPosts({
+        sortField: sortField,
+        sortDirection: sortDirection,
+        pageAction: "first",
+        currentQueryLastDoc: null,
+        currentPage: 1,
+        currentPageDocCursors: [null]
+      });
     } catch (err) {
       console.error("Error toggling publish state:", err);
+      setError("Failed to update post status."); // Provide user feedback
     } finally {
       setActionLoading(prev => ({ ...prev, [postId]: false }));
     }
@@ -186,10 +224,21 @@ function AdminPage() {
       try {
         const postRef = doc(db, "posts", postId);
         await deleteDoc(postRef);
-        await fetchPosts(sortField, sortDirection, "first");
+        // Refetch the first page to reflect changes
         setCurrentPage(1);
+        setQueryLastDoc(null);
+        setPageDocCursors([null]);
+        await fetchPosts({
+          sortField: sortField,
+          sortDirection: sortDirection,
+          pageAction: "first",
+          currentQueryLastDoc: null,
+          currentPage: 1,
+          currentPageDocCursors: [null]
+        });
       } catch (err) {
         console.error("Error deleting post:", err);
+        setError("Failed to delete post."); // Provide user feedback
       } finally {
         setActionLoading(prev => ({ ...prev, [`delete-${postId}`]: false }));
       }
@@ -197,17 +246,38 @@ function AdminPage() {
   };
   const handleNextPage = () => {
     if (isNextPageAvailable) {
-      setCurrentPage(prev => prev + 1);
-      // Pass sortField and sortDirection explicitly
-      fetchPosts(sortField, sortDirection, "next"); 
+      const nextPageToFetch = currentPage + 1;
+      fetchPosts({
+        sortField: sortField,
+        sortDirection: sortDirection,
+        pageAction: "next",
+        currentQueryLastDoc: queryLastDoc, // Current last doc from state
+        currentPage: nextPageToFetch,      // The page number we are about to fetch
+        currentPageDocCursors: pageDocCursors // Current cursors state
+      });
+      setCurrentPage(nextPageToFetch); // Update current page optimistically or after fetch
     }
   };
   const handlePrevPage = () => {
     if (currentPage > 1) {
-      setCurrentPage(prev => prev - 1);
-      setQueryLastDoc(pageDocCursors[currentPage - 2]);
-      // Pass sortField and sortDirection explicitly
-      fetchPosts(sortField, sortDirection, "prev");
+      const prevPageToFetch = currentPage - 1;
+      // For 'prev', currentQueryLastDoc is the cursor for the document *before* the first document of `prevPageToFetch`.
+      // This is pageDocCursors[prevPageToFetch - 1].
+      // E.g., to get page 2 (prevPageToFetch = 2), we need to startAfter pageDocCursors[1-1] = pageDocCursors[0] (which is null for page 1).
+      // To get page 1 (prevPageToFetch = 1), this implies pageDocCursors[-1] which is not right.
+      // The logic inside fetchPosts for 'prev' uses `currentPageDocCursors[pageToFetch -1]`.
+      // So, currentQueryLastDoc for options should be the cursor for the page *before* prevPageToFetch.
+      const cursorForPrevPageStart = pageDocCursors[prevPageToFetch - 1]; 
+
+      fetchPosts({
+        sortField: sortField,
+        sortDirection: sortDirection,
+        pageAction: "prev",
+        currentQueryLastDoc: cursorForPrevPageStart, // This is the key for 'prev'
+        currentPage: prevPageToFetch,                // The page number we are about to fetch
+        currentPageDocCursors: pageDocCursors     // Current cursors state
+      });
+      setCurrentPage(prevPageToFetch); // Update current page optimistically or after fetch
     }
   };
 

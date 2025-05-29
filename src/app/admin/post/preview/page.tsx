@@ -68,7 +68,7 @@ export default function PostPreviewPage() {
     title: "Static Test Title",
     content: "# Hello World\n\nThis is a *simple* test with some `code` and a [link](https://example.com).\n\n```javascript\nconsole.log('test');\n```",
     category: "Test Category",
-    publishDate: new Date().toISOString(),
+    publishDate: "2024-01-01T12:00:00.000Z", // Changed to a fixed ISO string
   };
 
   // if (isLoading) { // Commented out

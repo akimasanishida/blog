@@ -1,17 +1,17 @@
 // src/components/PostArticle.tsx
-'use server'; // Can be a server component as it processes markdown and renders
+// 'use server'; // Removed to fix "Server Actions must be async functions" with sync component
 
-import { unified } from 'unified';
-import remarkParse from 'remark-parse';
-import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
-import remarkEmoji from 'remark-emoji';
-import remarkRehype from 'remark-rehype';
-import rehypeKatex from 'rehype-katex';
-import rehypePrismPlus from 'rehype-prism-plus';
-import rehypeAutolinkHeadings from 'rehype-autolink-headings';
-import rehypeStringify from 'rehype-stringify';
-import { Timestamp } from 'firebase/firestore'; // For publishDate type
+// import { unified } from 'unified'; // Commented out for diagnostic
+// import remarkParse from 'remark-parse'; // Commented out for diagnostic
+// import remarkGfm from 'remark-gfm'; // Commented out for diagnostic
+// import remarkMath from 'remark-math'; // Commented out for diagnostic
+// import remarkEmoji from 'remark-emoji'; // Commented out for diagnostic
+// import remarkRehype from 'remark-rehype'; // Commented out for diagnostic
+// import rehypeKatex from 'rehype-katex'; // Commented out for diagnostic
+// import rehypePrismPlus from 'rehype-prism-plus'; // Commented out for diagnostic
+// import rehypeAutolinkHeadings from 'rehype-autolink-headings'; // Commented out for diagnostic
+// import rehypeStringify from 'rehype-stringify'; // Commented out for diagnostic
+import { Timestamp } from 'firebase/firestore'; // For publishDate type - kept for PostData interface
 
 // Define the PostData interface for the post prop
 // This should align with how Post data is structured in the application
@@ -29,8 +29,8 @@ interface PostArticleProps {
 
 // Helper function to format date
 // Handles Firebase Timestamp, JavaScript Date object, or string
-const formatDate = (dateInput: Date | Timestamp | string | undefined): string | null => {
-  if (!dateInput) return null;
+// const formatDate = (dateInput: Date | Timestamp | string | undefined): string | null => { // Commented out, not used in simplified version
+//   if (!dateInput) return null;
 
   let date: Date;
   if (dateInput instanceof Timestamp) {
@@ -52,56 +52,53 @@ const formatDate = (dateInput: Date | Timestamp | string | undefined): string | 
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
   const day = date.getDate().toString().padStart(2, '0');
   return `${year}-${month}-${day}`;
-};
+// };
 
-// Asynchronous function to process markdown content to HTML
-async function processMarkdownToHtml(markdownContent: string): Promise<string> {
-  try {
-    const file = await unified()
-      .use(remarkParse) // Parse markdown
-      .use(remarkGfm) // Support GFM (tables, strikethrough, etc.)
-      .use(remarkMath) // Support math syntax
-      .use(remarkEmoji) // Support emoji syntax like :joy:
-      .use(remarkRehype, { allowDangerousHtml: true }) // Convert to Rehype (HTML AST), allow raw HTML
-      .use(rehypeKatex) // Render math with KaTeX
-      .use(rehypePrismPlus, { defaultLanguage: 'js', showLineNumbers: true }) // Code syntax highlighting
-      .use(rehypeAutolinkHeadings, { // Add links to headings
-        behavior: 'wrap', // or 'append'
-        properties: { className: ['anchor'] }
-      })
-      .use(rehypeStringify, { allowDangerousHtml: true }) // Convert HTML AST to string
-      .process(markdownContent);
-    return String(file);
-  } catch (error) {
-    console.error("Error processing markdown:", error);
-    return `<p>Error processing content. Please check the markdown syntax.</p>`;
-  }
-}
+// Asynchronous function to process markdown content to HTML - Commented out for diagnostic
+// async function processMarkdownToHtml(markdownContent: string): Promise<string> {
+//   try {
+//     const file = await unified()
+//       .use(remarkParse) // Parse markdown
+//       .use(remarkGfm) // Support GFM (tables, strikethrough, etc.)
+//       .use(remarkMath) // Support math syntax
+//       .use(remarkEmoji) // Support emoji syntax like :joy:
+//       .use(remarkRehype, { allowDangerousHtml: true }) // Convert to Rehype (HTML AST), allow raw HTML
+//       .use(rehypeKatex) // Render math with KaTeX
+//       .use(rehypePrismPlus, { defaultLanguage: 'js', showLineNumbers: true }) // Code syntax highlighting
+//       .use(rehypeAutolinkHeadings, { // Add links to headings
+//         behavior: 'wrap', // or 'append'
+//         properties: { className: ['anchor'] }
+//       })
+//       .use(rehypeStringify, { allowDangerousHtml: true }) // Convert HTML AST to string
+//       .process(markdownContent);
+//     return String(file);
+//   } catch (error) {
+//     console.error("Error processing markdown:", error);
+//     return `<p>Error processing content. Please check the markdown syntax.</p>`;
+//   }
+// }
 
 
-export default async function PostArticle({ post }: PostArticleProps) {
+// Changed to a synchronous component for diagnostic purposes
+export default function PostArticle({ post }: PostArticleProps) {
   if (!post) {
-    return <div className="text-center py-10">No post data provided.</div>;
+    return (
+      <div className="text-center py-10">
+        <p>No post data provided to PostArticle (Simplified).</p>
+      </div>
+    );
   }
 
-  const processedContent = await processMarkdownToHtml(post.content);
-  const formattedPublishDate = formatDate(post.publishDate);
+  // const formattedPublishDate = formatDate(post.publishDate); // Commented out
 
   return (
     <article className="prose prose-base sm:prose-lg lg:prose-xl dark:prose-invert mx-auto p-4 sm:p-6 lg:p-8">
-      {/* 
-        CSS for KaTeX and PrismJS:
-        Ensure these are imported globally, e.g., in src/app/globals.css or layout.tsx:
-        import 'katex/dist/katex.min.css'; 
-        import 'prism-themes/themes/prism-one-dark.css'; // Or your preferred Prism theme
-        For line numbers with rehype-prism-plus, you might need additional CSS from 'prismjs/plugins/line-numbers/prism-line-numbers.css'
-        and ensure your chosen theme supports them or add styles manually.
-      */}
+      {/* Minimal static JSX for diagnostics */}
       <header className="mb-8">
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight mb-3">
-          {post.title || "Untitled Post"}
+          {post.title || "Static Title from Simplified PostArticle"}
         </h1>
-        {(post.category || formattedPublishDate) && (
+        {/* {(post.category || formattedPublishDate) && ( // Commented out category/date display
           <div className="text-sm sm:text-base text-muted-foreground">
             {post.category && (
               <span className="font-medium">{post.category}</span>
@@ -113,10 +110,19 @@ export default async function PostArticle({ post }: PostArticleProps) {
               <time dateTime={formattedPublishDate}>{formattedPublishDate}</time>
             )}
           </div>
-        )}
+        )} */}
+         <p className="text-sm text-muted-foreground">Category: {post.category || "N/A"} | Date: {post.publishDate ? String(post.publishDate) : "N/A"}</p>
       </header>
       
-      <div dangerouslySetInnerHTML={{ __html: processedContent }} />
+      <div>
+        <p>This is a minimal, synchronous render from the simplified PostArticle component.</p>
+        <h2 className="text-xl font-semibold mt-4 mb-2">Raw Content Prop:</h2>
+        <pre className="bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs overflow-x-auto">
+          <code>
+            {post.content || "No content prop provided."}
+          </code>
+        </pre>
+      </div>
     </article>
   );
 }
