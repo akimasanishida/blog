@@ -73,7 +73,10 @@ export default async function PostArticle({ post }: PostArticleProps) {
           </div>
         )}
       </header>
-      <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
+      <div>
+        <p>This is a static test paragraph replacing dangerouslySetInnerHTML.</p>
+        <p>Markdown processing still happened, but its output is not used here.</p>
+      </div>
     </article>
   );
 }
