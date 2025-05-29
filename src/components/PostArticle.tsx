@@ -3,7 +3,7 @@
 
 import { renderMarkdownToHTML } from '@/lib/markdown';
 import { formatJpDate } from '@/lib/format';
-import { CalendarPlus } from '@/components/Icons';
+// import { CalendarPlus } from '@/components/Icons'; // Temporarily commented out for diagnostics
 import { Timestamp } from 'firebase/firestore';
 
 export interface PostDataForArticle {
@@ -68,7 +68,7 @@ export default async function PostArticle({ post }: PostArticleProps) {
           <div className='text-sm text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1'>
             {finalDateToDisplay && (
               <span className='flex items-center'>
-                <CalendarPlus className='inline-block w-5 h-5 mr-1'/> 
+                <span className='mr-1'>[DateIcon]</span> {/* Placeholder for CalendarPlus */}
                 {finalDateToDisplay}
               </span>
             )}
