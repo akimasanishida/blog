@@ -8,16 +8,16 @@
 
 ### ディレクトリ構成
 
-| ページ        | パス                         | 内容                        |
-| ---------- | -------------------------- | ------------------------- |
-| トップページ     | `/`                        | 最新記事一覧（新着順）   |
-| 記事ページ      | `/posts/[slug]`            | 個別記事ページ                   |
-| アーカイブ（年）   | `/archives/[year]`         | 指定年のすべての記事                |
-| アーカイブ（月）   | `/archives/[year]/[month]` | 指定年月のすべての記事                   |
-| カテゴリーページ   | `/categories/[category]`   | 指定カテゴリーのすべての記事            |
-| About ページ  | `/about`                   | サイトやあなたの紹介                |
-| 検索結果ページ    | `/search?q=...`            | キーワードによる記事検索結果            |
-| 管理画面（任意）   | `/admin`                   | Markdown/画像の投稿・編集画面（認証付き） |
+| ページ           | パス                       | 内容                                      |
+| ---------------- | -------------------------- | ----------------------------------------- |
+| トップページ     | `/`                        | 最新記事一覧（新着順）                    |
+| 記事ページ       | `/posts/[slug]`            | 個別記事ページ                            |
+| アーカイブ（年） | `/archives/[year]`         | 指定年のすべての記事                      |
+| アーカイブ（月） | `/archives/[year]/[month]` | 指定年月のすべての記事                    |
+| カテゴリーページ | `/categories/[category]`   | 指定カテゴリーのすべての記事              |
+| About ページ     | `/about`                   | サイトやあなたの紹介                      |
+| 検索結果ページ   | `/search?q=...`            | キーワードによる記事検索結果              |
+| 管理画面（任意） | `/admin`                   | Markdown/画像の投稿・編集画面（認証付き） |
 
 **`app/` 以下の構成**
 
@@ -44,6 +44,8 @@ app/
 │   └── page.tsx          # 管理画面
         └── post/
         │   └── page.tsx  # 記事投稿・編集画面
+        │       └── preview/
+        │           └── page.tsx  # 投稿のプレビュー
         └── images/
             └── page.tsx  # 画像一覧（投稿・削除画面）
 ```
@@ -65,7 +67,7 @@ app/
 
 - `id`: Firestore Database が自動で付与
 - `title` (string, optional): タイトル
-- `slug` (string): スラッグ（URLに使用）
+- `slug` (string): スラッグ（UI では URL と案内する）
 - `publishDate` (timestamp): 投稿日時（自動生成）
 - `updateDate` (timestamp, optional): 更新日時（自動生成）
 - `category` (string, optional): カテゴリ（一つのみ）
@@ -99,18 +101,42 @@ app/
 **`admin/post`**
 
 - 左ペイン
-    - タイトル・本文入力欄・公開 or 更新ボタン
+    - タイトル・本文入力欄・公開 or 更新ボタン・下書き保存ボタン・プレビューボタン
         - 公開 or 更新ボタンを押したとき、正常に登録できるか確認する（`slug` の確認、ネットワークエラーなく登録できたかの確認など）
 - 右サイドバー
     - slug 入力
     - カテゴリー入力
     - アップロード済み画像をパネル表示（ui の ScrollArea で独立させる）。ここから選択して貼り付け可能。カーソルの位置に画像挿入。画像アップロードボタンも
+- 画像詳細ウィンドウ
+  - 画像をアップロードした後や画像をパネルからクリックした際に画面にオーバレイする形で表示
+  - 画像を大きく表示する詳細表示ウィンドウ（別ウィンドウではなく、全画面広告と同じ要領）
+  - 右上に「バツ」マーク。押すとウィンドウが消える
+  - 中央に画像
+  - 中央下（画像の下）に「この画像を本文に貼り付ける」ボタン。押すと本文に貼り付けられる。
+
+**操作**
+
+- 本文入力欄では、`Ctrl + Z` で undo 可能。画像の貼り付けに関しても undo する
+- 「公開」/「更新」ボタン：公開の場合は新しいデータを追加する。更新の場合は既存のデータを更新する。
+  - 公開：id なしの新規投稿 or id ありで `isPublic = False` の場合に表示
+  - 更新：id ありで `isPublic = True` の場合に表示
+- 「下書きを保存」ボタン：`isPublic = False` で新しいデータを保存する
+  - `isPublic = False` の場合に表示
+- id ありの場合で `slug` が変更されて「公開」「更新」「下書きを保存」のいずれかのボタンが押された場合、URL が変更されるが問題ないか尋ねる
+- 「プレビュー」ボタンを押すと、現在入力されている内容（保存されている内容**ではない**）をもとに、ブログ記事を新しいタブでプレビューする（`admin/post/preview`）
+- 「画像をアップロード」ボタンから画像をアップロードした際、画像詳細ウィンドウを開く（「画像をアップロード」ボタンでは貼り付けは行わない）
+- 変更内容がある状態でページを更新、移動、閉じようとした際に警告する
+
+**`admin/post/preview`**
+
+- ポストをプレビューする
 
 **`admin/images`**
 
 - 画像の追加、削除ボタン（ui の Button）
 - 画像一覧をパネル表示するエリア（ui の ScrollArea で独立させる）
 - 画像を追加した際、名前が重複する場合は自動で調整
+- 画像をクリックすると、画像詳細ウィンドウがオーバーレイする（`admin/post` と同じもの。コンポーネント化すること）
 
 #### 認証（`admin` 以下の各ページ）
 
@@ -144,6 +170,7 @@ app/
 - `PostList`（記事一覧）
     - 記事のタイトル・投稿日・更新日（あれば）・カテゴリを表示
 - `LoginForm`（ログインフォーム）
+- `PostArticle`：投稿を表示するコンポーネント
 
 ## 使用技術
 
@@ -168,3 +195,50 @@ app/
     - rehype-prism-plus（コードハイライトに prism.js を使用）
     - rehype-autolink-headings
     - rehype-stringify
+
+## コーディング
+
+**テスト**
+
+テストは不要
+
+**linter & build**
+
+```bash
+# linter
+pnpm lint
+
+# check to build successfully
+pnpm build
+```
+
+**Next.js 15 以降の非同期params**
+
+Next.js 15 以降では、非同期関数は以下の例のように書く必要がある：
+
+```ts
+// 非同期対応したコンポーネント
+const ResultPage = async ({
+  params,
+}: {
+  params: Promise<{ id: string }>; // Promiseを付与
+}) => {
+  const { id } = await params; // 非同期的にparamsを展開
+  const result = await fetchUserData(id); // 非同期処理
+  return (
+    <div>
+      <h1>ID: {id}</h1>
+      <p>Result Data: {JSON.stringify(result)}</p>
+    </div>
+  );
+};
+
+export default ResultPage;
+```
+
+こうしない場合、以下のようにエラーとなる：
+
+```
+Type error: Type '{ params: { id: string; }; }' does not satisfy the constraint 'PageProps'.
+Type '{ id: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+```

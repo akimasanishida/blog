@@ -10,11 +10,13 @@ import { storage } from '@/lib/firebase';
 import { 
   ref, uploadBytesResumable, getDownloadURL, listAll, deleteObject 
 } from 'firebase/storage';
+import ImageDetailOverlay, { ImageInfo as OverlayImageInfo } from '@/components/ImageDetailOverlay'; // Import the new component
 
+// Local ImageInfo for this page's list state. It's structurally identical to OverlayImageInfo.
 interface ImageInfo {
   url: string;
   name: string;
-  refPath: string; // Full path in Storage, needed for deletion
+  refPath: string; 
 }
 
 const STORAGE_IMAGE_PATH = "images/posts/";
@@ -27,6 +29,7 @@ function AdminImagesPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedImageForOverlay, setSelectedImageForOverlay] = useState<OverlayImageInfo | null>(null); // State for the overlay
 
   const fetchImages = async () => {
     setIsLoading(true);
@@ -169,10 +172,17 @@ function AdminImagesPage() {
                   alt={image.name}
                   width={200}
                   height={200}
-                  className="w-full h-32 object-cover transition-transform duration-300 ease-in-out group-hover:scale-105"
+                  className="w-full h-32 object-cover transition-transform duration-300 ease-in-out group-hover:scale-105 cursor-pointer"
+                  onClick={() => setSelectedImageForOverlay(image)} // Open overlay on image click
                 />
                 <div className="p-2">
-                  <p className="text-xs font-medium truncate" title={image.name}>{image.name}</p>
+                  <p 
+                    className="text-xs font-medium truncate cursor-pointer hover:underline" 
+                    title={image.name}
+                    onClick={() => setSelectedImageForOverlay(image)} // Open overlay on text click
+                  >
+                    {image.name}
+                  </p>
                   <Button 
                     variant="destructive" 
                     size="sm" 
@@ -194,6 +204,12 @@ function AdminImagesPage() {
           </div>
         )}
       </ScrollArea>
+      <ImageDetailOverlay
+        image={selectedImageForOverlay}
+        isOpen={!!selectedImageForOverlay}
+        onClose={() => setSelectedImageForOverlay(null)}
+        showInsertButton={false} // No insert button on this page
+      />
     </div>
   );
 }
