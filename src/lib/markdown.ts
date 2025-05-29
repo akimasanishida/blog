@@ -35,7 +35,7 @@ export const renderMarkdownToHTML = async (markdownContent: string): Promise<Mar
                                           // allowDangerousHtml: true only if source is trusted
     .use(rehypeKatex)                     // Render math with KaTeX
     .use(rehypePrismPlus, { ignoreMissing: true, showLineNumbers: true }) // Code syntax highlighting
-    .use(rehypeSlug)                      // Add slugs to headings for linking
+    // .use(rehypeSlug)                      // Add slugs to headings for linking - Temporarily commented out
     // .use(rehypeAutolinkHeadings, {         // Add self-links to headings
     //   behavior: 'wrap', // or 'append', 'prepend'
     //   properties: {
