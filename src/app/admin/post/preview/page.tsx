@@ -1,9 +1,9 @@
 // src/app/admin/post/preview/page.tsx
 "use client";
 
-// import { useEffect, useState } from 'react'; // Commented out for static data test
-import PostArticle from '@/components/PostArticle';
-import { Timestamp } from 'firebase/firestore'; // Keep for PreviewPostData type if used
+import { useEffect, useState, Suspense } from 'react'; // Ensure Suspense is imported
+import PostArticle from '@/components/PostArticle'; 
+import { Timestamp } from 'firebase/firestore'; // Or other relevant date types
 
 // Define a simple PostData interface for the preview data
 // This should align with the structure stored in sessionStorage
@@ -16,101 +16,60 @@ interface PreviewPostData {
                                         // PostArticle's formatDate can handle string or Date.
 }
 
-// const SESSION_STORAGE_KEY = 'postPreviewData'; // Commented out for static data test
+const SESSION_STORAGE_KEY = 'postPreviewData';
 
 export default function PostPreviewPage() {
-  // const [postData, setPostData] = useState<PreviewPostData | null>(null); // Commented out
-  // const [isLoading, setIsLoading] = useState(true); // Commented out
-  // const [error, setError] = useState<string | null>(null); // Commented out
+  const [postData, setPostData] = useState<PreviewPostData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // useEffect(() => {
-  //   // This effect should only run on the client side.
-  //   if (typeof window !== 'undefined') {
-  //     try {
-  //       const storedDataString = sessionStorage.getItem(SESSION_STORAGE_KEY);
+  useEffect(() => {
+    setIsLoading(true); // Set loading true at the start of effect
+    try {
+      const storedData = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (storedData) {
+        const parsedData = JSON.parse(storedData);
+        // Optional: Add validation for parsedData structure here if needed
+        if (parsedData && typeof parsedData.title === 'string' && typeof parsedData.content === 'string') {
+          setPostData(parsedData as PreviewPostData);
+        } else {
+          setError("Preview data is incomplete or malformed. It must contain at least a title and content.");
+          console.warn("Malformed preview data from sessionStorage:", parsedData);
+        }
+      } else {
+        setError("No preview data found. Please generate a preview from the post editor.");
+      }
+    } catch (e) {
+      console.error("Error retrieving or parsing preview data from sessionStorage:", e);
+      if (e instanceof SyntaxError) {
+        setError("Failed to load preview data: The stored data is not valid JSON.");
+      } else if (e instanceof Error) {
+        setError(`Failed to load preview data: ${e.message}`);
+      } else {
+        setError("Failed to load preview data due to an unexpected error.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, []); // Empty dependency array, runs once
 
-  //       if (storedDataString) {
-  //         const parsedData = JSON.parse(storedDataString);
+  if (isLoading) {
+    return <div className="container mx-auto p-4 text-center">Loading preview data...</div>;
+  }
 
-  //         // Basic validation: Ensure essential fields are present
-  //         if (parsedData && typeof parsedData.title === 'string' && typeof parsedData.content === 'string') {
-  //           // Optional: Convert date string back to Date object if needed by PostArticle,
-  //           // but PostArticle's formatDate is robust enough for ISO strings.
-  //           // if (parsedData.publishDate && typeof parsedData.publishDate === 'string') {
-  //           //   parsedData.publishDate = new Date(parsedData.publishDate);
-  //           // }
-  //           setPostData(parsedData as PreviewPostData);
-  //         } else {
-  //           setError("Preview data is incomplete or malformed. It must contain at least a title and content.");
-  //           console.warn("Malformed preview data:", parsedData);
-  //         }
-  //       } else {
-  //         setError("No preview data found. Please generate a preview from the post editor.");
-  //       }
-  //     } catch (e) {
-  //       console.error("Error retrieving or parsing preview data from sessionStorage:", e);
-  //       if (e instanceof SyntaxError) {
-  //         setError("Failed to load preview data: The stored data is not valid JSON.");
-  //       } else {
-  //         setError("Failed to load preview data due to an unexpected error.");
-  //       }
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   } else {
-  //     // Should not happen if "use client" is effective, but as a fallback.
-  //     setError("SessionStorage is not available.");
-  //     setIsLoading(false);
-  //   }
-  // }, []); // Empty dependency array ensures this runs once on mount
+  if (error) {
+    return <div className="container mx-auto p-4 text-center text-red-500">{error}</div>;
+  }
 
-  const staticPostData: PreviewPostData = {
-    title: "Static Test Title",
-    content: "# Hello World\n\nThis is a *simple* test with some `code` and a [link](https://example.com).\n\n```javascript\nconsole.log('test');\n```",
-    category: "Test Category",
-    publishDate: "2024-01-01T12:00:00.000Z", // Changed to a fixed ISO string
-  };
+  if (!postData) {
+    return <div className="container mx-auto p-4 text-center">No post data available for preview.</div>;
+  }
 
-  // if (isLoading) { // Commented out
-  //   return (
-  //     <div className="container mx-auto p-4 sm:p-6 lg:p-8 text-center">
-  //       <p className="text-lg text-muted-foreground">Loading preview...</p>
-  //     </div>
-  //   );
-  // }
-
-  // if (error) { // Commented out
-  //   return (
-  //     <div className="container mx-auto p-4 sm:p-6 lg:p-8 text-center">
-  //       <p className="text-lg text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 p-4 rounded-md">
-  //         {error}
-  //       </p>
-  //     </div>
-  //   );
-  // }
-
-  // if (!postData) { // Commented out
-  //   // This case should ideally be covered by the error state if data is not found or malformed.
-  //   return (
-  //     <div className="container mx-auto p-4 sm:p-6 lg:p-8 text-center">
-  //       <p className="text-lg text-muted-foreground">No post data available for preview.</p>
-  //     </div>
-  //   );
-  // }
-
-  // PostArticle is a Server Component, but can be used in Client Components.
-  // Next.js handles this interaction. Props must be serializable.
-  // Since postData comes from JSON.parse, it's already serializable.
-  // For static data, this is also true.
   return (
-    // The PostArticle component already has `mx-auto` and padding.
-    // Using a simpler container for the diagnostic test.
     <div className="container mx-auto py-8">
-      {/* 
-        The PostArticle component includes Tailwind's typography classes (`prose`).
-        It also handles its own padding and max-width for the article content.
-      */}
-      <PostArticle post={staticPostData} />
+      <Suspense fallback={<div className="container mx-auto p-4 text-center">Processing content...</div>}>
+        <PostArticle post={postData} />
+      </Suspense>
     </div>
   );
 }
