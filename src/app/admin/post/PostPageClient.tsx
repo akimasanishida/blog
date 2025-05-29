@@ -165,16 +165,47 @@ function AdminPostPage() {
   const handleImageClickToInsert = (image: ImageInfo) => {
     const textarea = contentTextareaRef.current;
     if (!textarea) return;
+
     const markdown = `![${image.name}](${image.url})`;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const currentContent = post.content;
-    const newContent = currentContent.substring(0, start) + markdown + currentContent.substring(end);
-    setPost(prev => ({ ...prev, content: newContent }));
-    textarea.focus();
-    setTimeout(() => {
-      textarea.selectionStart = textarea.selectionEnd = start + markdown.length;
-    }, 0);
+    
+    // Store current selection start to set cursor position later
+    const selectionStart = textarea.selectionStart;
+
+    textarea.focus(); // Focus is important for execCommand to work on the right element
+
+    // execCommand 'insertText' will replace selected text or insert at cursor
+    const success = document.execCommand('insertText', false, markdown);
+
+    if (success) {
+      // Update React state with the new content from the textarea
+      // This is crucial because execCommand modifies the DOM directly
+      setPost(prev => ({ ...prev, content: textarea.value }));
+
+      // Update cursor position to be after the inserted text
+      // Need a timeout to ensure the DOM update from execCommand has completed
+      setTimeout(() => {
+        if (contentTextareaRef.current) { // Check ref again in timeout
+          const newCursorPosition = selectionStart + markdown.length;
+          contentTextareaRef.current.selectionStart = newCursorPosition;
+          contentTextareaRef.current.selectionEnd = newCursorPosition;
+        }
+      }, 0);
+    } else {
+      // Fallback for browsers that might not support insertText fully
+      // or if execCommand fails for some reason. This is the old behavior.
+      console.warn("document.execCommand('insertText', ...) failed. Using fallback.")
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const currentContent = textarea.value; // Use textarea.value for current content
+      const newContent = currentContent.substring(0, start) + markdown + currentContent.substring(end);
+      setPost(prev => ({ ...prev, content: newContent }));
+      // Cursor update for fallback
+      setTimeout(() => {
+        if (contentTextareaRef.current) {
+          contentTextareaRef.current.selectionStart = contentTextareaRef.current.selectionEnd = start + markdown.length;
+        }
+      }, 0);
+    }
   };
 
   const handleImageClickInPanel = (image: OverlayImageInfo) => { // Parameter type changed to OverlayImageInfo
@@ -424,13 +455,50 @@ function AdminPostPage() {
               <Button
                 variant="outline"
                 onClick={() => {
-                  if (post.id && post.slug) {
-                    window.open(`/posts/${post.slug}`, '_blank');
+                  let publishDateForPreview: string | null = null;
+                  if (post.publishDate) {
+                    if (typeof post.publishDate === 'string') {
+                      // Attempt to parse if it's a string; if not valid, new Date() will handle it
+                      const d = new Date(post.publishDate);
+                      if (!isNaN(d.getTime())) {
+                        publishDateForPreview = d.toISOString();
+                      } else {
+                        // If string is not a valid date, could fall back or log error
+                        // For preview, using current date as fallback if string is invalid
+                        console.warn("Invalid date string for publishDate:", post.publishDate);
+                        publishDateForPreview = new Date().toISOString();
+                      }
+                    } else if ('toDate' in post.publishDate && typeof post.publishDate.toDate === 'function') { // Firestore Timestamp
+                      publishDateForPreview = post.publishDate.toDate().toISOString();
+                    } else if (post.publishDate instanceof Date) { // JavaScript Date
+                      publishDateForPreview = post.publishDate.toISOString();
+                    } else {
+                      // Unhandled type, fallback to current date for preview
+                      console.warn("Unknown type for publishDate:", post.publishDate);
+                      publishDateForPreview = new Date().toISOString();
+                    }
                   } else {
-                    alert("Please save the post first to preview.");
+                    // For new, unsaved posts, use current time for preview
+                    publishDateForPreview = new Date().toISOString();
+                  }
+
+                  const previewData = {
+                    title: post.title || "Untitled Post", // Provide a fallback for title
+                    content: post.content,
+                    category: post.category || "", // Provide a fallback for category
+                    publishDate: publishDateForPreview,
+                    // Add any other relevant fields from the 'post' state that PostArticle might use
+                  };
+
+                  try {
+                    sessionStorage.setItem('postPreviewData', JSON.stringify(previewData));
+                    window.open('/admin/post/preview', '_blank');
+                  } catch (error) {
+                    console.error("Error saving preview data to sessionStorage:", error);
+                    alert("Could not open preview. There might be an issue with your browser's storage, or the data is too large.");
                   }
                 }}
-                disabled={isSaving || isUploading || !post.id || !post.slug}
+                disabled={isSaving || isUploading || !post.content?.trim()}
               >
                 Preview
               </Button>
