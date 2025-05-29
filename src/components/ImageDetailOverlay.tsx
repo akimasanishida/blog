@@ -28,7 +28,7 @@ const ImageDetailOverlay: React.FC<ImageDetailOverlayProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 transition-opacity duration-300 ease-in-out">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 transition-opacity duration-300 ease-in-out">
       <div className="bg-background p-6 rounded-lg shadow-xl max-w-md w-full transform transition-all duration-300 ease-in-out scale-100">
         <h3 className="text-xl font-semibold mb-4 text-foreground">画像の詳細</h3>
         <p className="mb-1 text-sm text-muted-foreground">ファイル名:</p>

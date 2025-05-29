@@ -24,8 +24,8 @@ interface PostData {
   content: string;
   slug: string;
   category: string;
-  publishDate?: Timestamp;
-  updateDate?: Timestamp;
+  publishDate?: Timestamp | null; // Optional, can be null for drafts
+  updateDate?: Timestamp | null; // Optional, can be null for new posts
   isPublic: boolean;
 }
 
@@ -282,7 +282,7 @@ function AdminPostPage() {
         return;
       }
 
-      let dataToSave: Partial<PostData> & { updateDate: Timestamp; publishDate?: Timestamp | null } = {
+      const dataToSave: Partial<PostData> & { updateDate: Timestamp; publishDate?: Timestamp | null } = {
         title: currentPostData.title,
         content: currentPostData.content,
         slug: currentPostData.slug,
@@ -328,7 +328,7 @@ function AdminPostPage() {
 
       // Synchronize local state (post and initialPost) after successful save
       const currentSavedId = (isEditing && postId) ? postId : newPostRefId!;
-      let synchronizedPostState = {
+      const synchronizedPostState = {
         ...currentPostData, // Contains latest title, content, category, and SANITIZED slug
         ...dataToSave,      // Contains isPublic, and publishDate/updateDate (actual values or serverTimestamp sentinels)
         id: currentSavedId,
@@ -375,185 +375,185 @@ function AdminPostPage() {
   }
 
   return (
-    <div className="container mx-auto py-10">
-      <h1 className="text-3xl font-bold mb-6">
-        {isEditing ? "記事の編集" : "記事の作成"}
-      </h1>
-      {error && <p className="text-red-500 mb-4 bg-red-100 p-3 rounded-md">{error}</p>}
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* Left Pane */}
-        <div className="flex-1 space-y-8 flex-shrink-0 md:w-2/3 lg:w-3/4">
-          <ImageDetailOverlay
-            image={selectedImageForOverlay}
-            isOpen={!!selectedImageForOverlay}
-            onClose={() => setSelectedImageForOverlay(null)}
-            onInsert={(imageToInsert) => {
-              handleImageClickToInsert(imageToInsert);
-              // setSelectedImageForOverlay(null); // Already handled by onInsert in overlay component if desired, or here
-            }}
-            showInsertButton={true}
-          />
-
-          <div className='flex-1 space-y-6'>
-            <div>
-              <label htmlFor="postTitle" className="block text-sm font-medium text-foreground mb-2">タイトル</label>
-              <Input
-                id="postTitle"
-                name="title"
-                value={post.title}
-                onChange={handleInputChange}
-                placeholder="タイトルを入力"
-                disabled={isSaving || isUploading}
-              />
-            </div>
-            <div>
-              <label htmlFor="postContent" className="block text-sm font-medium text-foreground mb-2">本文（Markdown）</label>
-              <Textarea
-                    id="postContent"
-                    name="content"
-                    className="h-70 overflow-y-scroll resize-none"
-                    ref={contentTextareaRef}
-                    value={post.content}
-                    onChange={handleInputChange}
-                    placeholder="本文を入力してください..."
-                    disabled={isSaving || isUploading}
-                    style={{ minHeight: 0 }}
-              />
-            </div>
-          </div>
-          <div className="flex justify-end space-x-2 mt-6">
-            <Button
-              variant="outline"
-              onClick={() => {
-                if (post.id && post.slug) {
-                  window.open(`/posts/${post.slug}`, '_blank');
-                } else {
-                  alert("Please save the post first to preview.");
-                }
-              }}
-              disabled={isSaving || isUploading || !post.id || !post.slug}
-            >
-              Preview
-            </Button>
-            {(!postId || (postId && !post.isPublic)) && (
-              <Button
-                size="lg"
-                onClick={() => processSave('saveDraft')}
-                disabled={isSaving || isUploading}
-              >
-                {isSaving ? "Saving Draft..." : "Save Draft"}
-              </Button>
-            )}
-            {(!postId || (postId && !post.isPublic)) && (
-              <Button
-                size="lg"
-                onClick={() => processSave('publish')}
-                disabled={isSaving || isUploading}
-              >
-                {isSaving ? "Publishing..." : "Publish"}
-              </Button>
-            )}
-            {(postId && post.isPublic) && (
-              <Button
-                size="lg"
-                onClick={() => processSave('update')}
-                disabled={isSaving || isUploading}
-              >
-                {isSaving ? "Updating..." : "Update"}
-              </Button>
-            )}
-          </div>
-        </div>
-        {/* Right Sidebar */}
-        <div className="w-full md:w-1/3 lg:w-1/4 space-y-6 flex-shrink-0">
-          <div>
-            <label htmlFor="postSlug" className="block text-sm font-medium text-foreground mb-1">スラッグ（URL）</label>
-            <Input
-              id="postSlug"
-              name="slug"
-              value={post.slug}
-              onChange={handleSlugChange} // Using direct input change, sanitization on save
-              placeholder="例: my-first-post"
-              disabled={isSaving || isUploading}
-            />
-          </div>
-          <div>
-            <label htmlFor="postCategory" className="block text-sm font-medium text-foreground mb-1">カテゴリー</label>
-            <Input
-              id="postCategory"
-              name="category"
-              value={post.category}
-              onChange={handleInputChange}
-              placeholder="カテゴリーを入力"
-              disabled={isSaving || isUploading}
-            />
-          </div>
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-lg font-semibold">画像</h3>
-              <Button variant="ghost" size="sm" onClick={fetchImages} disabled={isLoadingImages || isUploading}>
-                <ArrowsClockwiseIcon className={`h-4 w-4 ${isLoadingImages ? 'animate-spin' : ''}`} />
-              </Button>
-            </div>
-            <ScrollArea className="h-72 w-full rounded-md border p-2 mb-2">
-              {isLoadingImages && <p className="text-xs text-foreground text-center">画像を読み込み中...</p>}
-              {imageError && !isUploading && (
-                <div className="text-red-500 text-xs p-2 bg-red-50 rounded-md flex items-center">
-                  <WarningCircleIcon className="h-4 w-4 mr-1 flex-shrink-0" />
-                  <span>{imageError}</span>
-                </div>
-              )}
-              {!isLoadingImages && images.length === 0 && !imageError && (
-                <p className="text-xs text-foreground text-center py-4">まだ画像がアップロードされていません。</p>
-              )}
-              <div className="grid grid-cols-3 gap-2 my-2 mx-2">
-                {images.map((img) => (
-                  <div
-                    key={img.url}
-                    className="cursor-pointer border rounded-md overflow-hidden hover:ring-2 ring-blue-500"
-                    onClick={() => handleImageClickInPanel(img)} // Changed this
-                    title={`「${img.name}」を選択`}
-                  >
-                    <Image
-                      src={img.url}
-                      alt={img.name}
-                      width={200}
-                      height={200}
-                      className="w-full h-20 object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="hidden"
-              ref={fileInputRef}
-              disabled={isUploading || isSaving}
-            />
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading || isSaving}
-            >
-              {isUploading ? `アップロード中... ${uploadProgress.toFixed(0)}%` : "画像をアップロード"}
-            </Button>
-            {/* Progress bar fallback */}
-            {isUploading && (
-              <div className="w-full h-2 mt-1 bg-gray-200 rounded">
-                <div
-                  className="h-2 bg-blue-500 rounded"
-                  style={{ width: `${uploadProgress}%` }}
+    <>
+      <ImageDetailOverlay
+        image={selectedImageForOverlay}
+        isOpen={!!selectedImageForOverlay}
+        onClose={() => setSelectedImageForOverlay(null)}
+        onInsert={(imageToInsert) => {
+          handleImageClickToInsert(imageToInsert);
+        }}
+        showInsertButton={true}
+      />
+      <div className="container mx-auto py-10">
+        <h1 className="text-3xl font-bold mb-6">
+          {isEditing ? "記事の編集" : "記事の作成"}
+        </h1>
+        {error && <p className="text-red-500 mb-4 bg-red-100 p-3 rounded-md">{error}</p>}
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Left Pane */}
+          <div className="flex-1 space-y-8 flex-shrink-0 md:w-2/3 lg:w-3/4">
+            <div className='flex-1 space-y-6'>
+              <div>
+                <label htmlFor="postTitle" className="block text-sm font-medium text-foreground mb-2">タイトル</label>
+                <Input
+                  id="postTitle"
+                  name="title"
+                  value={post.title}
+                  onChange={handleInputChange}
+                  placeholder="タイトルを入力"
+                  disabled={isSaving || isUploading}
                 />
               </div>
-            )}
+              <div>
+                <label htmlFor="postContent" className="block text-sm font-medium text-foreground mb-2">本文（Markdown）</label>
+                <Textarea
+                      id="postContent"
+                      name="content"
+                      className="h-70 overflow-y-scroll resize-none"
+                      ref={contentTextareaRef}
+                      value={post.content}
+                      onChange={handleInputChange}
+                      placeholder="本文を入力してください..."
+                      disabled={isSaving || isUploading}
+                      style={{ minHeight: 0 }}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (post.id && post.slug) {
+                    window.open(`/posts/${post.slug}`, '_blank');
+                  } else {
+                    alert("Please save the post first to preview.");
+                  }
+                }}
+                disabled={isSaving || isUploading || !post.id || !post.slug}
+              >
+                Preview
+              </Button>
+              {(!postId || (postId && !post.isPublic)) && (
+                <Button
+                  size="lg"
+                  onClick={() => processSave('saveDraft')}
+                  disabled={isSaving || isUploading}
+                >
+                  {isSaving ? "Saving Draft..." : "Save Draft"}
+                </Button>
+              )}
+              {(!postId || (postId && !post.isPublic)) && (
+                <Button
+                  size="lg"
+                  onClick={() => processSave('publish')}
+                  disabled={isSaving || isUploading}
+                >
+                  {isSaving ? "Publishing..." : "Publish"}
+                </Button>
+              )}
+              {(postId && post.isPublic) && (
+                <Button
+                  size="lg"
+                  onClick={() => processSave('update')}
+                  disabled={isSaving || isUploading}
+                >
+                  {isSaving ? "Updating..." : "Update"}
+                </Button>
+              )}
+            </div>
+          </div>
+          {/* Right Sidebar */}
+          <div className="w-full md:w-1/3 lg:w-1/4 space-y-6 flex-shrink-0">
+            <div>
+              <label htmlFor="postSlug" className="block text-sm font-medium text-foreground mb-1">スラッグ（URL）</label>
+              <Input
+                id="postSlug"
+                name="slug"
+                value={post.slug}
+                onChange={handleSlugChange} // Using direct input change, sanitization on save
+                placeholder="例: my-first-post"
+                disabled={isSaving || isUploading}
+              />
+            </div>
+            <div>
+              <label htmlFor="postCategory" className="block text-sm font-medium text-foreground mb-1">カテゴリー</label>
+              <Input
+                id="postCategory"
+                name="category"
+                value={post.category}
+                onChange={handleInputChange}
+                placeholder="カテゴリーを入力"
+                disabled={isSaving || isUploading}
+              />
+            </div>
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-lg font-semibold">画像</h3>
+                <Button variant="ghost" size="sm" onClick={fetchImages} disabled={isLoadingImages || isUploading}>
+                  <ArrowsClockwiseIcon className={`h-4 w-4 ${isLoadingImages ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+              <ScrollArea className="h-72 w-full rounded-md border p-2 mb-2">
+                {isLoadingImages && <p className="text-xs text-foreground text-center">画像を読み込み中...</p>}
+                {imageError && !isUploading && (
+                  <div className="text-red-500 text-xs p-2 bg-red-50 rounded-md flex items-center">
+                    <WarningCircleIcon className="h-4 w-4 mr-1 flex-shrink-0" />
+                    <span>{imageError}</span>
+                  </div>
+                )}
+                {!isLoadingImages && images.length === 0 && !imageError && (
+                  <p className="text-xs text-foreground text-center py-4">まだ画像がアップロードされていません。</p>
+                )}
+                <div className="grid grid-cols-3 gap-2 my-2 mx-2">
+                  {images.map((img) => (
+                    <div
+                      key={img.url}
+                      className="cursor-pointer border rounded-md overflow-hidden hover:ring-2 ring-blue-500"
+                      onClick={() => handleImageClickInPanel(img)} // Changed this
+                      title={`「${img.name}」を選択`}
+                    >
+                      <Image
+                        src={img.url}
+                        alt={img.name}
+                        width={200}
+                        height={200}
+                        className="w-full h-20 object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+                ref={fileInputRef}
+                disabled={isUploading || isSaving}
+              />
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading || isSaving}
+              >
+                {isUploading ? `アップロード中... ${uploadProgress.toFixed(0)}%` : "画像をアップロード"}
+              </Button>
+              {/* Progress bar fallback */}
+              {isUploading && (
+                <div className="w-full h-2 mt-1 bg-gray-200 rounded">
+                  <div
+                    className="h-2 bg-blue-500 rounded"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
