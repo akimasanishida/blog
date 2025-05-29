@@ -195,3 +195,50 @@ app/
     - rehype-prism-plus（コードハイライトに prism.js を使用）
     - rehype-autolink-headings
     - rehype-stringify
+
+## コーディング
+
+**テスト**
+
+テストは不要
+
+**linter & build**
+
+```bash
+# linter
+pnpm lint
+
+# check to build successfully
+pnpm build
+```
+
+**Next.js 15 以降の非同期params**
+
+Next.js 15 以降では、非同期関数は以下の例のように書く必要がある：
+
+```ts
+// 非同期対応したコンポーネント
+const ResultPage = async ({
+  params,
+}: {
+  params: Promise<{ id: string }>; // Promiseを付与
+}) => {
+  const { id } = await params; // 非同期的にparamsを展開
+  const result = await fetchUserData(id); // 非同期処理
+  return (
+    <div>
+      <h1>ID: {id}</h1>
+      <p>Result Data: {JSON.stringify(result)}</p>
+    </div>
+  );
+};
+
+export default ResultPage;
+```
+
+こうしない場合、以下のようにエラーとなる：
+
+```
+Type error: Type '{ params: { id: string; }; }' does not satisfy the constraint 'PageProps'.
+Type '{ id: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+```
