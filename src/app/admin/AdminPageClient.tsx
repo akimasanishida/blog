@@ -26,13 +26,13 @@ interface Post {
   title: string;
   slug: string;
   publishDate: Timestamp;
-  updateDate: Timestamp;
+  updateDate: Timestamp | null;
   category: string;
   isPublic: boolean;
 }
 
 const formatDate = (timestamp: Timestamp | undefined | null): string => {
-  if (!timestamp) return 'N/A';
+  if (timestamp === undefined || timestamp === null) return '---';
   return timestamp.toDate().toLocaleDateString('ja-JP', {
     year: 'numeric',
     month: '2-digit',
@@ -78,8 +78,18 @@ function AdminPage() {
     setError(null);
     try {
       const postsCollectionRef = collection(db, "posts");
-      let q;
-      const baseQuery = query(postsCollectionRef, orderBy(currentSortField, currentSortDirection));
+      let baseQuery;
+
+      if (currentSortField === "publishDate" && currentSortDirection === "desc") {
+        // Sort by isPublic (false then true), then by publishDate descending.
+        // This brings unpublished (isPublic: false) posts to the top when sorting by publishDate desc.
+        baseQuery = query(postsCollectionRef, orderBy("isPublic", "asc"), orderBy(currentSortField, currentSortDirection));
+      } else {
+        // Standard sorting for all other cases
+        baseQuery = query(postsCollectionRef, orderBy(currentSortField, currentSortDirection));
+      }
+
+      let q; // Query variable to be used for pagination
 
       if (pageAction === "first") {
         // setCurrentPage(1) and setPageDocCursors([null]) are handled by the caller (main useEffect)
@@ -195,10 +205,26 @@ function AdminPage() {
     setActionLoading(prev => ({ ...prev, [postId]: true }));
     try {
       const postRef = doc(db, "posts", postId);
-      await updateDoc(postRef, {
+
+      // Data to update in Firestore
+      const updateData: { isPublic: boolean; publishDate?: any } = { // Using 'any' for serverTimestamp flexibility
         isPublic: !currentIsPublic,
-        updateDate: serverTimestamp()
-      });
+      };
+
+      // If we are publishing the post (i.e., currentIsPublic is false, so !currentIsPublic is true)
+      if (!currentIsPublic) {
+        // Find the post in the local state to check its current publishDate
+        const postToToggle = posts.find(p => p.id === postId);
+        // If the post is found and its publishDate is null (or undefined), set it
+        // This assumes 'Post' interface has 'publishDate: Timestamp | null;'
+        if (postToToggle && !postToToggle.publishDate) {
+          updateData.publishDate = serverTimestamp();
+        }
+      }
+      // No changes to updateDate in this operation
+
+      await updateDoc(postRef, updateData);
+
       // Refetch the first page to reflect changes
       setCurrentPage(1); 
       setQueryLastDoc(null);
@@ -213,7 +239,7 @@ function AdminPage() {
       });
     } catch (err) {
       console.error("Error toggling publish state:", err);
-      setError("Failed to update post status."); // Provide user feedback
+      setError("Failed to update post status.");
     } finally {
       setActionLoading(prev => ({ ...prev, [postId]: false }));
     }
