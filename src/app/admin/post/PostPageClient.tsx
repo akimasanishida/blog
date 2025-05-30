@@ -25,7 +25,7 @@ interface PostData {
   slug: string;
   category: string;
   publishDate?: Timestamp | null; // Optional, can be null for drafts
-  updateDate: Timestamp | null; // Optional, can be null for new posts
+  updateDate?: Timestamp | null; // Optional, can be null for new posts
   isPublic: boolean;
 }
 
@@ -267,7 +267,7 @@ function AdminPostPage() {
 
     const sanitizedSlug = post.slug.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     if (!sanitizedSlug) {
-      setError("スラッグは必須です。 (Slug is required.)");
+      setError("URLは必須です。 (Slug is required.)");
       return;
     }
     const currentPostData = { ...post, slug: sanitizedSlug };
@@ -279,7 +279,7 @@ function AdminPostPage() {
 
     if (isEditing && postId && currentPostData.slug !== initialPost.slug) {
       const confirmSlugChange = window.confirm(
-        "スラッグを変更すると、既存のURLが無効になる可能性があります。本当に変更しますか？ (Changing the slug might break existing URLs. Are you sure you want to change it?)"
+        "URLを変更すると、既存のURLが無効になる可能性があります。本当に変更しますか？ (Changing the slug might break existing URLs. Are you sure you want to change it?)"
       );
       if (!confirmSlugChange) {
         return;
@@ -305,7 +305,7 @@ function AdminPostPage() {
       }
 
       if (slugExists) {
-        setError(`スラッグ "${currentPostData.slug}" は既に存在します。別のスラッグを選択してください。 (Slug "${currentPostData.slug}" already exists. Please choose another.)`);
+        setError(`このURL "${currentPostData.slug}" は既に存在します。別のURLを選択してください。 (Slug "${currentPostData.slug}" already exists. Please choose another.)`);
         setIsSaving(false);
         return;
       }
@@ -316,7 +316,15 @@ function AdminPostPage() {
         currentPostData.slug !== initialPost.slug || // Slug is part of content change check
         currentPostData.category !== initialPost.category;
 
-      const finalDataToSave: any = {
+      const finalDataToSave: {
+        title: string;
+        content: string;
+        slug: string;
+        category: string;
+        isPublic: boolean;
+        publishDate?: Timestamp | null | import("firebase/firestore").FieldValue;
+        updateDate?: Timestamp | null | import("firebase/firestore").FieldValue;
+      } = {
         title: currentPostData.title,
         content: currentPostData.content,
         slug: currentPostData.slug,
@@ -543,7 +551,7 @@ function AdminPostPage() {
                 }}
                 disabled={isSaving || isUploading || !post.content?.trim()}
               >
-                Preview
+                プレビュー
               </Button>
               {(!postId || (postId && !post.isPublic)) && (
                 <Button
@@ -551,7 +559,7 @@ function AdminPostPage() {
                   onClick={() => processSave('saveDraft')}
                   disabled={isSaving || isUploading}
                 >
-                  {isSaving ? "Saving Draft..." : "Save Draft"}
+                  {isSaving ? "下書きを保存中..." : "下書きを保存"}
                 </Button>
               )}
               {(!postId || (postId && !post.isPublic)) && (
@@ -560,7 +568,7 @@ function AdminPostPage() {
                   onClick={() => processSave('publish')}
                   disabled={isSaving || isUploading}
                 >
-                  {isSaving ? "Publishing..." : "Publish"}
+                  {isSaving ? "公開中..." : "公開"}
                 </Button>
               )}
               {(postId && post.isPublic) && (
@@ -569,7 +577,7 @@ function AdminPostPage() {
                   onClick={() => processSave('update')}
                   disabled={isSaving || isUploading}
                 >
-                  {isSaving ? "Updating..." : "Update"}
+                  {isSaving ? "更新中..." : "更新"}
                 </Button>
               )}
             </div>
@@ -577,7 +585,7 @@ function AdminPostPage() {
           {/* Right Sidebar */}
           <div className="w-full md:w-1/3 lg:w-1/4 space-y-6 flex-shrink-0">
             <div>
-              <label htmlFor="postSlug" className="block text-sm font-medium text-foreground mb-1">スラッグ（URL）</label>
+              <label htmlFor="postSlug" className="block text-sm font-medium text-foreground mb-1">URL</label>
               <Input
                 id="postSlug"
                 name="slug"

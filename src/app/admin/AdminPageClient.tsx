@@ -207,7 +207,7 @@ function AdminPage() {
       const postRef = doc(db, "posts", postId);
 
       // Data to update in Firestore
-      const updateData: { isPublic: boolean; publishDate?: any } = { // Using 'any' for serverTimestamp flexibility
+      const updateData: { isPublic: boolean; publishDate?: Timestamp | import("firebase/firestore").FieldValue } = { // Using correct type for serverTimestamp flexibility
         isPublic: !currentIsPublic,
       };
 
