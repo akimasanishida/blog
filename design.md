@@ -242,3 +242,14 @@ export default ResultPage;
 Type error: Type '{ params: { id: string; }; }' does not satisfy the constraint 'PageProps'.
 Type '{ id: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
 ```
+
+**DO NOT USE type `any`**
+
+`any` is prohibited in TypeScript (though it is allowed in JavaScript).
+Specify a different type.
+
+エラー例：
+
+```
+Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+```

@@ -265,10 +265,9 @@ function AdminPostPage() {
   ) => {
     setError(null);
 
-    // Sanitize slug before validation and saving
     const sanitizedSlug = post.slug.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     if (!sanitizedSlug) {
-      setError("スラッグは必須です。 (Slug is required.)");
+      setError("URLは必須です。 (Slug is required.)");
       return;
     }
     const currentPostData = { ...post, slug: sanitizedSlug };
@@ -278,10 +277,9 @@ function AdminPostPage() {
       return;
     }
 
-    // Slug change warning for existing posts
     if (isEditing && postId && currentPostData.slug !== initialPost.slug) {
       const confirmSlugChange = window.confirm(
-        "スラッグを変更すると、既存のURLが無効になる可能性があります。本当に変更しますか？ (Changing the slug might break existing URLs. Are you sure you want to change it?)"
+        "URLを変更すると、既存のURLが無効になる可能性があります。本当に変更しますか？ (Changing the slug might break existing URLs. Are you sure you want to change it?)"
       );
       if (!confirmSlugChange) {
         return;
@@ -302,89 +300,121 @@ function AdminPostPage() {
             }
           });
         } else {
-          // New post, or slug changed to an existing one
           slugExists = true;
         }
       }
 
       if (slugExists) {
-        setError(`スラッグ "${currentPostData.slug}" は既に存在します。別のスラッグを選択してください。 (Slug "${currentPostData.slug}" already exists. Please choose another.)`);
+        setError(`このURL "${currentPostData.slug}" は既に存在します。別のURLを選択してください。 (Slug "${currentPostData.slug}" already exists. Please choose another.)`);
         setIsSaving(false);
         return;
       }
 
-      const dataToSave: Partial<PostData> & { updateDate: Timestamp; publishDate?: Timestamp | null } = {
+      const hasContentChanged =
+        currentPostData.title !== initialPost.title ||
+        currentPostData.content !== initialPost.content ||
+        currentPostData.slug !== initialPost.slug || // Slug is part of content change check
+        currentPostData.category !== initialPost.category;
+
+      const finalDataToSave: {
+        title: string;
+        content: string;
+        slug: string;
+        category: string;
+        isPublic: boolean;
+        publishDate?: Timestamp | null | import("firebase/firestore").FieldValue;
+        updateDate?: Timestamp | null | import("firebase/firestore").FieldValue;
+      } = {
         title: currentPostData.title,
         content: currentPostData.content,
         slug: currentPostData.slug,
         category: currentPostData.category,
-        updateDate: serverTimestamp() as Timestamp,
       };
 
-      switch (action) {
-        case 'publish':
-          dataToSave.isPublic = true;
-          if (!isEditing) { // New post
-            dataToSave.publishDate = serverTimestamp() as Timestamp;
-          } else { // Existing draft being published
-            dataToSave.publishDate = initialPost.publishDate || serverTimestamp() as Timestamp;
-          }
-          break;
-        case 'update': // Existing public post
-          dataToSave.isPublic = true;
-          dataToSave.publishDate = initialPost.publishDate; // Keep existing publish date
-          break;
-        case 'saveDraft':
-          dataToSave.isPublic = false;
-          if (!isEditing) { // New post, saving as draft
-            dataToSave.publishDate = null;
-          } else { // Existing draft, or existing public post being reverted to draft
-            dataToSave.publishDate = initialPost.publishDate || null; // Keep if it existed
-          }
-          break;
+      // Determine isPublic state
+      if (action === 'publish' || action === 'update') {
+        finalDataToSave.isPublic = true;
+      } else { // saveDraft
+        finalDataToSave.isPublic = false;
+      }
+
+      // Determine publishDate
+      if (action === 'publish') {
+        if (!isEditing) { // New post published
+          finalDataToSave.publishDate = serverTimestamp() as Timestamp;
+        } else { // Existing draft published
+          finalDataToSave.publishDate = initialPost.publishDate || serverTimestamp() as Timestamp;
+        }
+      } else if (action === 'update') { // Existing public post
+        finalDataToSave.publishDate = initialPost.publishDate; // Must exist, keep current
+      } else { // saveDraft
+        if (!isEditing) { // New draft
+          finalDataToSave.publishDate = null;
+        } else { // Existing post saved as draft
+          finalDataToSave.publishDate = initialPost.publishDate || null; // Preserve if existed, else null
+        }
+      }
+
+      // Determine updateDate
+      if (hasContentChanged) {
+        finalDataToSave.updateDate = serverTimestamp() as Timestamp;
+      } else {
+        if (!isEditing) { // New post (publish or draft), content hasn't "changed" from initial empty state yet
+          finalDataToSave.updateDate = null;
+        } else { // Existing post, no content change
+          finalDataToSave.updateDate = initialPost.updateDate || null; // Keep old updateDate
+        }
       }
       
-      // Ensure updateDate is always set
-      dataToSave.updateDate = serverTimestamp() as Timestamp;
+      // Override: For brand new posts (first save, publish or draft), updateDate is always null.
+      // This takes precedence over hasContentChanged for the initial save.
+      if (!isEditing) {
+        finalDataToSave.updateDate = null;
+      }
 
       let newPostRefId: string | null = null;
 
       if (isEditing && postId) {
         const postRef = doc(db, "posts", postId);
-        await updateDoc(postRef, dataToSave);
+        // Firestore's updateDoc only updates fields provided.
+        // If finalDataToSave.updateDate is null, it will set it to null.
+        // If a field is undefined in finalDataToSave, it will be ignored by updateDoc.
+        // Ensure all paths correctly set fields to null instead of undefined if they should be cleared.
+        await updateDoc(postRef, finalDataToSave);
       } else { // New post
-        const newPostRef = await addDoc(collection(db, "posts"), dataToSave);
+        // AddDoc will create fields. If a field is null, it's stored as null.
+        // If undefined, Firestore might store it as null or ignore, better to be explicit with null.
+        const newPostRef = await addDoc(collection(db, "posts"), finalDataToSave);
         newPostRefId = newPostRef.id;
       }
 
-      // Synchronize local state (post and initialPost) after successful save
       const currentSavedId = (isEditing && postId) ? postId : newPostRefId!;
-      const synchronizedPostState = {
-        ...currentPostData, // Contains latest title, content, category, and SANITIZED slug
-        ...dataToSave,      // Contains isPublic, and publishDate/updateDate (actual values or serverTimestamp sentinels)
+      const synchronizedPostState: PostData = {
         id: currentSavedId,
+        title: finalDataToSave.title,
+        content: finalDataToSave.content,
+        slug: finalDataToSave.slug,
+        category: finalDataToSave.category,
+        isPublic: finalDataToSave.isPublic,
+        publishDate: finalDataToSave.publishDate, // This could be Timestamp, serverTimestamp, or null
+        updateDate: finalDataToSave.updateDate,   // This could be Timestamp, serverTimestamp, or null
       };
 
-      // Replace serverTimestamp() sentinels with client-side Timestamp.now()
-      // for immediate consistency in 'post' and 'initialPost' states.
-      synchronizedPostState.updateDate = Timestamp.now(); // updateDate is always new
-
-      if (dataToSave.publishDate && !(dataToSave.publishDate instanceof Timestamp) && dataToSave.publishDate !== null) {
-        // If publishDate in dataToSave was a serverTimestamp() sentinel
+      // Replace serverTimestamp() sentinels with client-side Timestamp.now() for immediate UI consistency
+      if (finalDataToSave.publishDate && !(finalDataToSave.publishDate instanceof Timestamp) && finalDataToSave.publishDate !== null) {
         synchronizedPostState.publishDate = Timestamp.now();
       } else {
-        // If publishDate was an actual Timestamp or null, it's already correct in dataToSave
-        synchronizedPostState.publishDate = dataToSave.publishDate;
-      }
-      
-      // Ensure publishDate is null for new drafts, as dataToSave.publishDate would be null from switch case
-      if (action === 'saveDraft' && !isEditing) {
-        synchronizedPostState.publishDate = null;
+        synchronizedPostState.publishDate = finalDataToSave.publishDate; // Already a Timestamp or null
       }
 
+      if (finalDataToSave.updateDate && !(finalDataToSave.updateDate instanceof Timestamp) && finalDataToSave.updateDate !== null) {
+        synchronizedPostState.updateDate = Timestamp.now();
+      } else {
+        synchronizedPostState.updateDate = finalDataToSave.updateDate; // Already a Timestamp or null
+      }
 
       setPost(synchronizedPostState);
-      setInitialPost(synchronizedPostState);
+      setInitialPost(synchronizedPostState); // Keep initialPost in sync with the saved state
 
       if (!isEditing && newPostRefId) {
         alert("投稿を作成しました！ (Post created successfully!)");
@@ -521,7 +551,7 @@ function AdminPostPage() {
                 }}
                 disabled={isSaving || isUploading || !post.content?.trim()}
               >
-                Preview
+                プレビュー
               </Button>
               {(!postId || (postId && !post.isPublic)) && (
                 <Button
@@ -529,7 +559,7 @@ function AdminPostPage() {
                   onClick={() => processSave('saveDraft')}
                   disabled={isSaving || isUploading}
                 >
-                  {isSaving ? "Saving Draft..." : "Save Draft"}
+                  {isSaving ? "下書きを保存中..." : "下書きを保存"}
                 </Button>
               )}
               {(!postId || (postId && !post.isPublic)) && (
@@ -538,7 +568,7 @@ function AdminPostPage() {
                   onClick={() => processSave('publish')}
                   disabled={isSaving || isUploading}
                 >
-                  {isSaving ? "Publishing..." : "Publish"}
+                  {isSaving ? "公開中..." : "公開"}
                 </Button>
               )}
               {(postId && post.isPublic) && (
@@ -547,7 +577,7 @@ function AdminPostPage() {
                   onClick={() => processSave('update')}
                   disabled={isSaving || isUploading}
                 >
-                  {isSaving ? "Updating..." : "Update"}
+                  {isSaving ? "更新中..." : "更新"}
                 </Button>
               )}
             </div>
@@ -555,7 +585,7 @@ function AdminPostPage() {
           {/* Right Sidebar */}
           <div className="w-full md:w-1/3 lg:w-1/4 space-y-6 flex-shrink-0">
             <div>
-              <label htmlFor="postSlug" className="block text-sm font-medium text-foreground mb-1">スラッグ（URL）</label>
+              <label htmlFor="postSlug" className="block text-sm font-medium text-foreground mb-1">URL</label>
               <Input
                 id="postSlug"
                 name="slug"
