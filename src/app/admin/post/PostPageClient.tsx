@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowsClockwiseIcon , WarningCircleIcon  } from '@phosphor-icons/react';
+import { ArrowsClockwiseIcon, WarningCircleIcon } from '@phosphor-icons/react';
 import Image from "next/image";
 import withAdminAuth from '@/components/withAdminAuth';
 import { db, storage } from '@/lib/firebase';
@@ -16,18 +16,7 @@ import {
   ref, uploadBytesResumable, getDownloadURL, listAll
 } from 'firebase/storage';
 import ImageDetailOverlay, { ImageInfo as OverlayImageInfo } from '@/components/ImageDetailOverlay'; // Import the new component
-
-// Define the Post interface
-interface PostData {
-  id?: string;
-  title: string;
-  content: string;
-  slug: string;
-  category: string;
-  publishDate?: Timestamp | null; // Optional, can be null for drafts
-  updateDate?: Timestamp | null; // Optional, can be null for new posts
-  isPublic: boolean;
-}
+import { Post, PostWithId } from '@/types/post';
 
 // Interface for images in the panel - This should match OverlayImageInfo
 // Ensure ImageInfo here is compatible with OverlayImageInfo. For now, they are structurally identical.
@@ -38,12 +27,13 @@ interface ImageInfo { // This is used for the 'images' state array
 }
 
 
-const initialPostState: PostData = {
+const initialPostState: Post = {
   title: '',
   content: '',
   slug: '',
   category: '',
   isPublic: false,
+  tags: [],
 };
 
 const STORAGE_IMAGE_PATH = "images/posts/";
@@ -55,8 +45,8 @@ function AdminPostPage() {
   const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [post, setPost] = useState<PostData>(initialPostState);
-  const [initialPost, setInitialPost] = useState<PostData>(initialPostState); // For change detection
+  const [post, setPost] = useState<Post>(initialPostState);
+  const [initialPost, setInitialPost] = useState<Post>(initialPostState); // For change detection
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -77,7 +67,7 @@ function AdminPostPage() {
           const postRef = doc(db, "posts", postId);
           const docSnap = await getDoc(postRef);
           if (docSnap.exists()) {
-            const data = docSnap.data() as PostData;
+            const data = docSnap.data() as Post;
             const fullPostData = { ...initialPostState, ...data, id: docSnap.id };
             setPost(fullPostData);
             setInitialPost(fullPostData); // Store initial data
@@ -167,7 +157,7 @@ function AdminPostPage() {
     if (!textarea) return;
 
     const markdown = `![${image.name}](${image.url})`;
-    
+
     // Store current selection start to set cursor position later
     const selectionStart = textarea.selectionStart;
 
@@ -265,7 +255,7 @@ function AdminPostPage() {
   ) => {
     setError(null);
 
-    const sanitizedSlug = post.slug.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const sanitizedSlug = (post.slug || "").toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     if (!sanitizedSlug) {
       setError("URLは必須です。 (Slug is required.)");
       return;
@@ -316,19 +306,13 @@ function AdminPostPage() {
         currentPostData.slug !== initialPost.slug || // Slug is part of content change check
         currentPostData.category !== initialPost.category;
 
-      const finalDataToSave: {
-        title: string;
-        content: string;
-        slug: string;
-        category: string;
-        isPublic: boolean;
-        publishDate?: Timestamp | null | import("firebase/firestore").FieldValue;
-        updateDate?: Timestamp | null | import("firebase/firestore").FieldValue;
-      } = {
+      const finalDataToSave: Post = {
         title: currentPostData.title,
         content: currentPostData.content,
         slug: currentPostData.slug,
         category: currentPostData.category,
+        isPublic: false,
+        tags: currentPostData.tags || [],
       };
 
       // Determine isPublic state
@@ -349,9 +333,9 @@ function AdminPostPage() {
         finalDataToSave.publishDate = initialPost.publishDate; // Must exist, keep current
       } else { // saveDraft
         if (!isEditing) { // New draft
-          finalDataToSave.publishDate = null;
+          finalDataToSave.publishDate = undefined;
         } else { // Existing post saved as draft
-          finalDataToSave.publishDate = initialPost.publishDate || null; // Preserve if existed, else null
+          finalDataToSave.publishDate = initialPost.publishDate || undefined; // Preserve if existed, else undefined
         }
       }
 
@@ -360,16 +344,16 @@ function AdminPostPage() {
         finalDataToSave.updateDate = serverTimestamp() as Timestamp;
       } else {
         if (!isEditing) { // New post (publish or draft), content hasn't "changed" from initial empty state yet
-          finalDataToSave.updateDate = null;
+          finalDataToSave.updateDate = undefined;
         } else { // Existing post, no content change
-          finalDataToSave.updateDate = initialPost.updateDate || null; // Keep old updateDate
+          finalDataToSave.updateDate = initialPost.updateDate || undefined; // Keep old updateDate
         }
       }
-      
+
       // Override: For brand new posts (first save, publish or draft), updateDate is always null.
       // This takes precedence over hasContentChanged for the initial save.
       if (!isEditing) {
-        finalDataToSave.updateDate = null;
+        finalDataToSave.updateDate = undefined;
       }
 
       let newPostRefId: string | null = null;
@@ -380,7 +364,7 @@ function AdminPostPage() {
         // If finalDataToSave.updateDate is null, it will set it to null.
         // If a field is undefined in finalDataToSave, it will be ignored by updateDoc.
         // Ensure all paths correctly set fields to null instead of undefined if they should be cleared.
-        await updateDoc(postRef, finalDataToSave);
+        await updateDoc(postRef, { ...finalDataToSave });
       } else { // New post
         // AddDoc will create fields. If a field is null, it's stored as null.
         // If undefined, Firestore might store it as null or ignore, better to be explicit with null.
@@ -389,7 +373,7 @@ function AdminPostPage() {
       }
 
       const currentSavedId = (isEditing && postId) ? postId : newPostRefId!;
-      const synchronizedPostState: PostData = {
+      const synchronizedPostState: PostWithId = {
         id: currentSavedId,
         title: finalDataToSave.title,
         content: finalDataToSave.content,
@@ -398,6 +382,7 @@ function AdminPostPage() {
         isPublic: finalDataToSave.isPublic,
         publishDate: finalDataToSave.publishDate, // This could be Timestamp, serverTimestamp, or null
         updateDate: finalDataToSave.updateDate,   // This could be Timestamp, serverTimestamp, or null
+        tags: finalDataToSave.tags || [],
       };
 
       // Replace serverTimestamp() sentinels with client-side Timestamp.now() for immediate UI consistency
@@ -469,15 +454,15 @@ function AdminPostPage() {
               <div>
                 <label htmlFor="postContent" className="block text-sm font-medium text-foreground mb-2">本文（Markdown）</label>
                 <Textarea
-                      id="postContent"
-                      name="content"
-                      className="h-70 overflow-y-scroll resize-none"
-                      ref={contentTextareaRef}
-                      value={post.content}
-                      onChange={handleInputChange}
-                      placeholder="本文を入力してください..."
-                      disabled={isSaving || isUploading}
-                      style={{ minHeight: 0 }}
+                  id="postContent"
+                  name="content"
+                  className="h-70 overflow-y-scroll resize-none"
+                  ref={contentTextareaRef}
+                  value={post.content}
+                  onChange={handleInputChange}
+                  placeholder="本文を入力してください..."
+                  disabled={isSaving || isUploading}
+                  style={{ minHeight: 0 }}
                 />
               </div>
             </div>
@@ -485,60 +470,12 @@ function AdminPostPage() {
               <Button
                 variant="outline"
                 onClick={() => {
-                  let publishDateForPreview: string | null = null;
-                  if (post.publishDate) {
-                    if (typeof post.publishDate === 'string') {
-                      // Attempt to parse if it's a string; if not valid, new Date() will handle it
-                      const d = new Date(post.publishDate);
-                      if (!isNaN(d.getTime())) {
-                        publishDateForPreview = d.toISOString();
-                      } else {
-                        // If string is not a valid date, could fall back or log error
-                        // For preview, using current date as fallback if string is invalid
-                        console.warn("Invalid date string for publishDate:", post.publishDate);
-                        publishDateForPreview = new Date().toISOString();
-                      }
-                    } else if ('toDate' in post.publishDate && typeof post.publishDate.toDate === 'function') { // Firestore Timestamp
-                      publishDateForPreview = post.publishDate.toDate().toISOString();
-                    } else if (post.publishDate instanceof Date) { // JavaScript Date
-                      publishDateForPreview = post.publishDate.toISOString();
-                    } else {
-                      // Unhandled type, fallback to current date for preview
-                      console.warn("Unknown type for publishDate:", post.publishDate);
-                      publishDateForPreview = new Date().toISOString();
-                    }
-                  } else {
-                    // For new, unsaved posts, use current time for preview
-                    publishDateForPreview = new Date().toISOString();
-                  }
-
-                  // updateDateもISO文字列で渡す
-                  let updateDateForPreview: string | null = null;
-                  if (post.updateDate) {
-                    if (typeof post.updateDate === 'string') {
-                      const d = new Date(post.updateDate);
-                      if (!isNaN(d.getTime())) {
-                        updateDateForPreview = d.toISOString();
-                      } else {
-                        updateDateForPreview = new Date().toISOString();
-                      }
-                    } else if ('toDate' in post.updateDate && typeof post.updateDate.toDate === 'function') {
-                      updateDateForPreview = post.updateDate.toDate().toISOString();
-                    } else if (post.updateDate instanceof Date) {
-                      updateDateForPreview = post.updateDate.toISOString();
-                    } else {
-                      updateDateForPreview = new Date().toISOString();
-                    }
-                  } else {
-                    updateDateForPreview = new Date().toISOString();
-                  }
-
                   const previewData = {
                     title: post.title || "Untitled Post",
                     content: post.content,
                     category: post.category || "",
-                    publishDate: publishDateForPreview,
-                    updateDate: updateDateForPreview,
+                    publishDate: post.publishDate,
+                    updateDate: post.updateDate,
                   };
 
                   try {

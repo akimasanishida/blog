@@ -1,10 +1,10 @@
 import Link from 'next/link';
-import type { PostList } from '../types/post'; // Adjusted path
+import type { Post } from '../types/post'; // Adjusted path
 import { CalendarPlus, ClockClockwise } from "@/components/Icons"; // Adjusted import path
-import { formatJpDateFromDate } from "@/lib/format"; // Adjusted import path
+import { formatJpDateFromTimestamp } from "@/lib/format"; // Adjusted import path
 
 
-const PostList = ({ posts }: PostList) => {
+const PostList = ({ posts }: { posts: Post[] }) => {
   if (!posts || posts.length === 0) {
     return <p className="text-center text-muted-foreground">No posts found.</p>;
   }
@@ -21,12 +21,12 @@ const PostList = ({ posts }: PostList) => {
           <div className="text-sm text-muted-foreground flex items-center">
             {post.publishDate && (
               <>
-                <CalendarPlus className='inline-block w-5 h-5'/> <span className="ml-1">{formatJpDateFromDate(post.publishDate)}</span>
+                <CalendarPlus className='inline-block w-5 h-5'/> <span className="ml-1">{formatJpDateFromTimestamp(post.publishDate)}</span>
               </>
             )}
             {post.updateDate && (
               <span className="ml-4">
-                <ClockClockwise className='inline-block w-5 h-5'/> <span className="ml-1">{formatJpDateFromDate(post.updateDate)}</span>
+                <ClockClockwise className='inline-block w-5 h-5'/> <span className="ml-1">{formatJpDateFromTimestamp(post.updateDate)}</span>
               </span>
             )}
           </div>

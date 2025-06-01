@@ -1,29 +1,25 @@
 // src/components/ArticleBody.tsx
+"use client";
+
 import Link from "next/link";
 import { CalendarPlus, ClockClockwise } from "@/components/Icons";
 import SocialShareLinks from "@/components/SocialShareLinks";
-import { formatJpDateFromDate } from "@/lib/format";
-
-interface ArticleBodyProps {
-  title: string;
-  contentHtml: string;
-  category?: string;
-  publishDate?: Date;
-  updateDate?: Date;
-  showCategoryLink?: boolean; // true: category名をリンクにする
-  showShareLinks?: boolean;   // true: フッターにシェアリンクを表示
-}
 
 export default function ArticleBody({
   title,
   contentHtml,
-  category,
   publishDate,
   updateDate,
-  showCategoryLink = false,
-  showShareLinks = false,
-}: ArticleBodyProps) {
-
+  category,
+  showShareLinks = true,
+}: {
+  title: string;
+  contentHtml: string;
+  publishDate?: string;
+  updateDate?: string;
+  category?: string;
+  showShareLinks?: boolean;
+}) {
   return (
     <article className="prose dark:prose-invert max-w-full">
       <header className="mb-6 pb-4 border-b">
@@ -33,13 +29,13 @@ export default function ArticleBody({
             {publishDate && (
               <span>
                 <CalendarPlus className="inline-block w-5 h-5" />{" "}
-                <span className="ml-1">{formatJpDateFromDate(publishDate)}</span>
+                <span className="ml-1">{publishDate}</span>
               </span>
             )}
             {updateDate && (
               <span className="ml-4">
                 <ClockClockwise className="inline-block w-5 h-5" />{" "}
-                <span className="ml-1">{formatJpDateFromDate(updateDate)}</span>
+                <span className="ml-1">{updateDate}</span>
               </span>
             )}
           </div>
@@ -48,18 +44,14 @@ export default function ArticleBody({
           <div className="text-sm text-muted-foreground">
             <span>
               カテゴリー：
-              {showCategoryLink ? (
-                <Link
-                  href={`/categories/${encodeURIComponent(
-                    category.toLowerCase()
-                  )}`}
-                  className="!text-muted-foreground"
-                >
-                  <span className="font-bold">{category}</span>
-                </Link>
-              ) : (
+              <Link
+                href={`/categories/${encodeURIComponent(
+                  category.toLowerCase()
+                )}`}
+                className="!text-muted-foreground"
+              >
                 <span className="font-bold">{category}</span>
-              )}
+              </Link>
             </span>
           </div>
         )}

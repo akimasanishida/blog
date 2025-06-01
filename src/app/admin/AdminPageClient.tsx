@@ -18,31 +18,23 @@ import {
   collection, query, orderBy, getDocs, Timestamp, doc, updateDoc, deleteDoc, serverTimestamp, 
   OrderByDirection, limit, startAfter, QueryDocumentSnapshot
 } from 'firebase/firestore';
+import { PostWithId } from '@/types/post';
+import { formatJpDateFromTimestamp } from '@/lib/format';
+import { getAllPostsForAdmin } from '@/lib/firebase';
 
 
-// Define the Post interface
-interface Post {
-  id: string;
-  title: string;
-  slug: string;
-  publishDate: Timestamp;
-  updateDate: Timestamp | null;
-  category: string;
-  isPublic: boolean;
-}
-
-const formatDate = (timestamp: Timestamp | undefined | null): string => {
-  if (timestamp === undefined || timestamp === null) return '---';
-  return timestamp.toDate().toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
-};
+// const formatDate = (timestamp: Timestamp | undefined | null): string => {
+//   if (timestamp === undefined || timestamp === null) return '---';
+//   return timestamp.toDate().toLocaleDateString('ja-JP', {
+//     year: 'numeric',
+//     month: '2-digit',
+//     day: '2-digit',
+//   });
+// };
 
 function AdminPage() {
   const router = useRouter();
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState<PostWithId[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
@@ -109,18 +101,7 @@ function AdminPage() {
       }
 
       const querySnapshot = await getDocs(q);
-      const fetchedPosts: Post[] = querySnapshot.docs.map(docSnap => {
-        const data = docSnap.data();
-        return {
-          id: docSnap.id,
-          title: data.title || "No Title",
-          slug: data.slug || "",
-          publishDate: data.publishDate as Timestamp,
-          updateDate: data.updateDate as Timestamp,
-          category: data.category || "Uncategorized",
-          isPublic: data.isPublic === undefined ? true : data.isPublic,
-        };
-      });
+      const fetchedPosts: PostWithId[] = await getAllPostsForAdmin();
       setPosts(fetchedPosts);
       const newLastDoc = querySnapshot.docs[querySnapshot.docs.length - 1] || null;
       setQueryLastDoc(newLastDoc);
@@ -337,8 +318,8 @@ function AdminPage() {
                 </TableCell>
                 <TableCell>{post.category}</TableCell>
                 <TableCell>{post.isPublic ? "公開中" : "下書き"}</TableCell>
-                <TableCell>{formatDate(post.publishDate)}</TableCell>
-                <TableCell>{formatDate(post.updateDate)}</TableCell>
+                <TableCell>{formatJpDateFromTimestamp(post.publishDate) || "---"}</TableCell>
+                <TableCell>{formatJpDateFromTimestamp(post.updateDate) || "---"}</TableCell>
                 <TableCell>
                   {post.slug && post.isPublic ? (
                     <Link href={`/posts/${post.slug}`} target="_blank" rel="noopener noreferrer">

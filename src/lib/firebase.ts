@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth'; // Added for Firebase Auth
 import { getStorage, FirebaseStorage } from 'firebase/storage'; // Added for Firebase Storage
-import type { Post } from '../types/post'; // Adjust path as needed after moving types
+import type { Post, PostWithId } from '../types/post'; // Adjust path as needed after moving types
 
 // Confirmed Firebase project configuration
 const firebaseConfig = {
@@ -58,14 +58,45 @@ export const getAllPosts = async (): Promise<Post[]> => {
       return {
         slug: data.slug,
         title: data.title || "untitled",
-        publishDate: (data.publishDate as Timestamp).toDate() || undefined,
-        updateDate: (data.updateDate as Timestamp).toDate() || undefined,
+        isPublic: data.isPublic,
+        publishDate: data.publishDate as Timestamp || undefined,
+        updateDate: data.updateDate as Timestamp || undefined,
         category: data.category || "uncategorized",
         content: data.content || "",
         tags: data.tags || [],
       };
     });
     
+    return posts;
+  } catch {
+    return [];
+  }
+};
+
+export const getAllPostsForAdmin = async (): Promise<PostWithId[]> => {
+  try {
+    const postsCollection = collection(db, "posts");
+    // 追加: isPublic の制限なし
+    const q = query(
+      postsCollection,
+      orderBy("publishDate", "desc")
+    );
+    const querySnapshot = await getDocs(q);
+
+    const posts: PostWithId[] = querySnapshot.docs.map(docSnap => {
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        slug: data.slug,
+        title: data.title || "untitled",
+        isPublic: data.isPublic,
+        publishDate: data.publishDate as Timestamp || undefined,
+        updateDate: data.updateDate as Timestamp || undefined,
+        category: data.category || "uncategorized",
+        content: data.content || "",
+        tags: data.tags || [],
+      };
+    });
     return posts;
   } catch {
     return [];
@@ -93,8 +124,9 @@ export const getPostBySlug = async (slug: string): Promise<Post | null> => {
       const post: Post = {
         slug: data.slug,
         title: data.title || "untitled",
-        publishDate: (data.publishDate as Timestamp).toDate() || undefined,
-        updateDate: (data.updateDate as Timestamp).toDate() || undefined,
+        isPublic: data.isPublic,
+        publishDate: data.publishDate as Timestamp || undefined,
+        updateDate: data.updateDate as Timestamp || undefined,
         category: data.category || "uncategorized",
         content: data.content || "",
         tags: data.tags || [],

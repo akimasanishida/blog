@@ -30,8 +30,8 @@ const YearlyArchivePage = async({ params }: { params: Promise<{ year: string }> 
   const filteredPosts = allPosts.filter(post => {
     // Assuming post.publishDate is an ISO string "YYYY-MM-DDTHH:mm:ss.sssZ"
     // or just "YYYY-MM-DD" which new Date() can parse.
-    const postDate = new Date(post.publishDate);
-    return postDate.getUTCFullYear() === year_num; // Use getUTCFullYear for consistency
+    const postDate = post.publishDate?.toDate();
+    return postDate?.getUTCFullYear() === year_num; // Use getUTCFullYear for consistency
   });
 
   return (

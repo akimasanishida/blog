@@ -31,10 +31,10 @@ const MonthlyArchivePage = async ({ params }: {
 
   const allPosts = await getAllPosts(); // Fetch all posts
   const filteredPosts = allPosts.filter(post => {
-    const postDate = new Date(post.publishDate);
+    const postDate = post.publishDate?.toDate();
     // JavaScript Date months are 0-indexed (0 for Jan, 11 for Dec)
     // So, compare postDate.getUTCMonth() + 1 with the URL month
-    return postDate.getUTCFullYear() === year_num && (postDate.getUTCMonth() + 1) === month_num;
+    return postDate?.getUTCFullYear() === year_num && (postDate.getUTCMonth() + 1) === month_num;
   });
 
   return (

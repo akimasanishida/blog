@@ -27,10 +27,9 @@ const Footer = () => {
         const processedArchiveData = new Map<string, Set<string>>();
         posts.forEach(post => {
           if (!post.publishDate) return; // Skip posts without a publish date
-          const date = new Date(post.publishDate);
-          console.log(date, post.publishDate);
-          const year = date.getUTCFullYear().toString();
-          const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+          const date = post.publishDate?.toDate();
+          const year = date?.getUTCFullYear().toString();
+          const month = (date?.getUTCMonth() + 1).toString().padStart(2, '0');
           if (!processedArchiveData.has(year)) {
             processedArchiveData.set(year, new Set());
           }
