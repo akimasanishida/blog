@@ -3,22 +3,10 @@
 
 import { useEffect, useState } from 'react';
 import { renderMarkdownToHTML } from '@/lib/markdown';
-import { Timestamp } from 'firebase/firestore';
 import ArticleBody from './ArticleBody';
+import type { Post } from '@/types/post';
 
-export interface PostDataForArticle {
-  title: string;
-  content: string; // Raw Markdown content
-  category?: string;
-  publishDate?: string | Date | Timestamp;
-  updateDate?: string | Date | Timestamp;
-}
-
-interface PostArticleProps {
-  post: PostDataForArticle;
-}
-
-export default function PostArticle({ post }: PostArticleProps) {
+export default function PostArticle({ post }: { post: Post }) {
   const [contentHtml, setContentHtml] = useState<string>('');
 
   useEffect(() => {
@@ -39,28 +27,13 @@ export default function PostArticle({ post }: PostArticleProps) {
     );
   }
 
-  // publishDate, updateDate の型を string | Date | undefined に揃える
-  let publishDate: string | Date | undefined = undefined;
-  if (post.publishDate instanceof Timestamp) {
-    publishDate = post.publishDate.toDate();
-  } else if (post.publishDate !== undefined) {
-    publishDate = post.publishDate as string | Date;
-  }
-
-  let updateDate: string | Date | undefined = undefined;
-  if (post.updateDate instanceof Timestamp) {
-    updateDate = post.updateDate.toDate();
-  } else if (post.updateDate !== undefined) {
-    updateDate = post.updateDate as string | Date;
-  }
-
   return (
     <ArticleBody
       title={post.title}
       contentHtml={contentHtml}
       category={post.category}
-      publishDate={publishDate}
-      updateDate={updateDate}
+      publishDate={post.publishDate}
+      updateDate={post.updateDate}
       showCategoryLink={false}
       showShareLinks={false}
     />

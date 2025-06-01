@@ -1,15 +1,15 @@
 // src/components/ArticleBody.tsx
 import Link from "next/link";
 import { CalendarPlus, ClockClockwise } from "@/components/Icons";
-import { formatJpDate } from "@/lib/format";
 import SocialShareLinks from "@/components/SocialShareLinks";
+import { formatJpDateFromDate } from "@/lib/format";
 
 interface ArticleBodyProps {
   title: string;
   contentHtml: string;
   category?: string;
-  publishDate?: string | Date;
-  updateDate?: string | Date;
+  publishDate?: Date;
+  updateDate?: Date;
   showCategoryLink?: boolean; // true: category名をリンクにする
   showShareLinks?: boolean;   // true: フッターにシェアリンクを表示
 }
@@ -23,41 +23,23 @@ export default function ArticleBody({
   showCategoryLink = false,
   showShareLinks = false,
 }: ArticleBodyProps) {
-  let publishDateStr = "";
-  if (publishDate) {
-    if (publishDate instanceof Date) {
-      publishDateStr = formatJpDate(publishDate.toISOString());
-    } else {
-      const d = new Date(publishDate);
-      publishDateStr = isNaN(d.getTime()) ? String(publishDate) : formatJpDate(d.toISOString());
-    }
-  }
-  let updateDateStr = "";
-  if (updateDate) {
-    if (updateDate instanceof Date) {
-      updateDateStr = formatJpDate(updateDate.toISOString());
-    } else {
-      const d = new Date(updateDate);
-      updateDateStr = isNaN(d.getTime()) ? String(updateDate) : formatJpDate(d.toISOString());
-    }
-  }
 
   return (
     <article className="prose dark:prose-invert max-w-full">
       <header className="mb-6 pb-4 border-b">
         <h1 className="text-4xl mb-2">{title || "Untitled Post"}</h1>
-        {(publishDateStr || updateDateStr) && (
+        {(publishDate || updateDate) && (
           <div className="text-sm text-muted-foreground flex items-center">
-            {publishDateStr && (
+            {publishDate && (
               <span>
                 <CalendarPlus className="inline-block w-5 h-5" />{" "}
-                <span className="ml-1">{publishDateStr}</span>
+                <span className="ml-1">{formatJpDateFromDate(publishDate)}</span>
               </span>
             )}
-            {updateDateStr && (
+            {updateDate && (
               <span className="ml-4">
                 <ClockClockwise className="inline-block w-5 h-5" />{" "}
-                <span className="ml-1">{updateDateStr}</span>
+                <span className="ml-1">{formatJpDateFromDate(updateDate)}</span>
               </span>
             )}
           </div>

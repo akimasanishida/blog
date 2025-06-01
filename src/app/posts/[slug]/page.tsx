@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getPostBySlug } from '@/lib/firebase'; // Updated import
 import { renderMarkdownToHTML } from '@/lib/markdown'; // Updated import
-import type { PostDetail } from '@/types/post'; // Updated import
+import type { Post } from '@/types/post'; // Updated import
 // import { getAllPosts } from '@/lib/firebase'; // For generateStaticParams
 import 'katex/dist/katex.min.css';
 import 'prism-themes/themes/prism-one-dark.css';
@@ -23,7 +23,7 @@ const PostPage = async ({ params }: {
   params: Promise<{ slug: string }>
 }) => {
   const { slug } = await params;
-  const post: PostDetail | null = await getPostBySlug(slug);
+  const post: Post | null = await getPostBySlug(slug);
 
   if (!post) {
     notFound(); // Renders the nearest not-found.tsx or a default Next.js 404 page

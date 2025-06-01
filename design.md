@@ -6,6 +6,21 @@
 
 ## サイトの構成
 
+## プロジェクト構成
+
+本プロジェクトの主なディレクトリ・ファイル構成は以下の通りです。  
+`app/` 以下のページ構成については「## サイトの構成」を参照してください。
+
+```
+components/         # サイト全体で使う共通UIコンポーネント（Header, Footer, PostList, SearchBox など）
+components/ui/      # shadcn/ui
+lib/                # FirebaseやMarkdown変換などのライブラリ・ユーティリティ
+types/              # 型定義
+```
+
+- 主要なロジックやUI部品は `components/` および `lib/` に配置します。
+- 型定義は `types/` にまとめて管理します。
+
 ### ディレクトリ構成
 
 | ページ           | パス                       | 内容                                      |

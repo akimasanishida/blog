@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { getAllPosts } from '@/lib/firebase'; // Adjust path if necessary
-import type { PostListItem } from '@/types/post'; // Adjust path if necessary
+import type { Post } from '@/types/post'; // Adjust path if necessary
 import SearchBox from './SearchBox';
 
 
@@ -21,12 +21,14 @@ const Footer = () => {
     const fetchAndProcessData = async () => {
       setLoading(true);
       try {
-        const posts: PostListItem[] = await getAllPosts();
+        const posts: Post[] = await getAllPosts();
         
         // --- Process Archives (existing logic) ---
         const processedArchiveData = new Map<string, Set<string>>();
         posts.forEach(post => {
+          if (!post.publishDate) return; // Skip posts without a publish date
           const date = new Date(post.publishDate);
+          console.log(date, post.publishDate);
           const year = date.getUTCFullYear().toString();
           const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
           if (!processedArchiveData.has(year)) {
