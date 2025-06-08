@@ -23,15 +23,6 @@ import { formatJpDateFromTimestamp } from '@/lib/format';
 import { getAllPostsForAdmin } from '@/lib/firebase';
 
 
-// const formatDate = (timestamp: Timestamp | undefined | null): string => {
-//   if (timestamp === undefined || timestamp === null) return '---';
-//   return timestamp.toDate().toLocaleDateString('ja-JP', {
-//     year: 'numeric',
-//     month: '2-digit',
-//     day: '2-digit',
-//   });
-// };
-
 function AdminPage() {
   const router = useRouter();
   const [posts, setPosts] = useState<PostWithId[]>([]);

@@ -17,14 +17,7 @@ import {
 } from 'firebase/storage';
 import ImageDetailOverlay, { ImageInfo as OverlayImageInfo } from '@/components/ImageDetailOverlay'; // Import the new component
 import { Post, PostWithId } from '@/types/post';
-
-// Interface for images in the panel - This should match OverlayImageInfo
-// Ensure ImageInfo here is compatible with OverlayImageInfo. For now, they are structurally identical.
-interface ImageInfo { // This is used for the 'images' state array
-  url: string;
-  name: string;
-  refPath: string;
-}
+import { ImageInfo } from '@/types/image';
 
 
 const initialPostState: Post = {
@@ -333,9 +326,9 @@ function AdminPostPage() {
         finalDataToSave.publishDate = initialPost.publishDate; // Must exist, keep current
       } else { // saveDraft
         if (!isEditing) { // New draft
-          finalDataToSave.publishDate = undefined;
+          finalDataToSave.publishDate = null;
         } else { // Existing post saved as draft
-          finalDataToSave.publishDate = initialPost.publishDate || undefined; // Preserve if existed, else undefined
+          finalDataToSave.publishDate = initialPost.publishDate || null; // Preserve if existed, else null
         }
       }
 
@@ -344,16 +337,16 @@ function AdminPostPage() {
         finalDataToSave.updateDate = serverTimestamp() as Timestamp;
       } else {
         if (!isEditing) { // New post (publish or draft), content hasn't "changed" from initial empty state yet
-          finalDataToSave.updateDate = undefined;
+          finalDataToSave.updateDate = null;
         } else { // Existing post, no content change
-          finalDataToSave.updateDate = initialPost.updateDate || undefined; // Keep old updateDate
+          finalDataToSave.updateDate = initialPost.updateDate || null; // Keep old updateDate
         }
       }
 
       // Override: For brand new posts (first save, publish or draft), updateDate is always null.
       // This takes precedence over hasContentChanged for the initial save.
       if (!isEditing) {
-        finalDataToSave.updateDate = undefined;
+        finalDataToSave.updateDate = null;
       }
 
       let newPostRefId: string | null = null;

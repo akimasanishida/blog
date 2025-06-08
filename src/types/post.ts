@@ -7,8 +7,8 @@ export interface Post {
   content: string; // Raw Markdown content
   category: string;
   isPublic: boolean;  // Whether the post is public or draft
-  publishDate?: Timestamp;
-  updateDate?: Timestamp;
+  publishDate?: Timestamp | null;
+  updateDate?: Timestamp | null;
   tags: string[]; // Optional, for future use
 }
 
