@@ -22,6 +22,25 @@ import { PostWithId } from '@/types/post';
 import { formatJpDateFromTimestamp } from '@/lib/format';
 import { getAllPostsForAdmin } from '@/lib/firebase';
 
+function sortPosts(
+  postsToSort: PostWithId[],
+  field: 'publishDate' | 'updateDate',
+  direction: OrderByDirection,
+) {
+  return [...postsToSort].sort((a, b) => {
+    if (field === 'publishDate' && direction === 'desc' && a.isPublic !== b.isPublic) {
+      return a.isPublic ? 1 : -1; // Drafts first when sorting by publishDate desc
+    }
+
+    const aDate = a[field];
+    const bDate = b[field];
+    const aVal = aDate ? aDate.toMillis() : Number.POSITIVE_INFINITY;
+    const bVal = bDate ? bDate.toMillis() : Number.POSITIVE_INFINITY;
+
+    return direction === 'asc' ? aVal - bVal : bVal - aVal;
+  });
+}
+
 
 function AdminPage() {
   const router = useRouter();
@@ -93,7 +112,12 @@ function AdminPage() {
 
       const querySnapshot = await getDocs(q);
       const fetchedPosts: PostWithId[] = await getAllPostsForAdmin();
-      setPosts(fetchedPosts);
+      const sortedPosts = sortPosts(
+        fetchedPosts,
+        currentSortField as 'publishDate' | 'updateDate',
+        currentSortDirection,
+      );
+      setPosts(sortedPosts);
       const newLastDoc = querySnapshot.docs[querySnapshot.docs.length - 1] || null;
       setQueryLastDoc(newLastDoc);
 
