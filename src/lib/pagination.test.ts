@@ -1,16 +1,20 @@
 import { paginatePost, NUM_PAGINATION } from './pagination';
 import { Post } from '../types/post';
+import { Timestamp } from 'firebase/firestore';
 
 // Helper function to create mock Post objects
 const createMockPost = (slug: string): Post => ({
   slug,
-  publishDate: new Date(),
+  publishDate: new Timestamp(0, 0),
   isPublic: true,
   title: `Test Post ${slug}`,
+  content: `Content for ${slug}`,
+  category: 'Test Category',
+  tags: [],
 });
 
 describe('paginatePost', () => {
-  const originalNumPagination = NUM_PAGINATION;
+  // const originalNumPagination = NUM_PAGINATION;
   let mockPosts: Post[];
 
   beforeEach(() => {
@@ -26,8 +30,8 @@ describe('paginatePost', () => {
   });
 
   test('should return undefined for a null list of posts', () => {
-    // Casting to any to bypass TypeScript's null check for the test
-    expect(paginatePost(null as any, 1)).toBeUndefined();
+    // @ts-expect-error: intentionally passing null to test robustness
+    expect(paginatePost(null, 1)).toBeUndefined();
   });
 
   test('should return all posts if count is less than NUM_PAGINATION', () => {
@@ -104,8 +108,8 @@ describe('paginatePost', () => {
     expect(totalPages).toBe(5);
 
     // Simulate fetching page 3 if NUM_PAGINATION was 1
-    const page3Index = (3 - 1) * localNumPagination;
-    const expectedPage3 = mockPosts.slice(page3Index, page3Index + localNumPagination);
+    // const page3Index = (3 - 1) * localNumPagination;
+    // const expectedPage3 = mockPosts.slice(page3Index, page3Index + localNumPagination);
 
     // Actual test with current NUM_PAGINATION. This part of the test verifies current behavior,
     // while the above lines are more of a thought experiment for NUM_PAGINATION = 1.
