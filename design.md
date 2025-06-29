@@ -163,7 +163,7 @@ app/
 
 カスタムクレーム `admin` を追加済み
 
-### コンポーネント
+### コンポーネント（`components`）
 
 - `Header`（ナビゲーション）
     - 左揃えでブログタイトル（クリックすると `/` へ）
@@ -186,6 +186,31 @@ app/
     - 記事のタイトル・投稿日・更新日（あれば）・カテゴリを表示
 - `LoginForm`（ログインフォーム）
 - `PostArticle`：投稿を表示するコンポーネント
+
+### ライブラリ（`lib`）
+
+- firebase.ts: Firebase を用いたデータの取得・送信
+  - `getAllPosts`: すべての公開中の投稿を取得する
+  - `getAllPostsForAdmin`: 下書きを含むすべての投稿を取得する
+  - `getPostBySlug`: slug を用いて公開中の投稿とその中身を取得する
+- firebaseAdmin.ts: Firebase の Admin 操作を行うための権限を取得
+- format.ts: 日付時刻のフォーマット
+  - `formatJpDateFromDate`: `Date` をフォーマット済み日付時刻文字列へ変換
+  - `formatJpDateFromString`: `string` をフォーマット済み日付時刻文字列へ変換
+  - `formatJpDateFromTimestamp`: Firebase の `Timestamp` をフォーマット済み日付時刻文字列へ変換
+- markdown.ts: マークダウンのレンダリング
+  - `renderMarkdownToHTML`: Markdown を HTML へレンダリング
+- pagination.ts: ページネーションのための機能
+  - `paginationPosts`: 投稿一覧より、指定されたページのみの投稿一覧を返す
+- utils.ts: 外部ライブラリにより作成されたと思われる
+
+### 型（`types`）
+
+- image.ts
+  - `ImageInfo`: 画像の情報
+- post.ts
+  - `Post`: 投稿の情報
+  - `PostWithId`: `Post` の拡張。Firebase Database の `id` もとる。
 
 ## 使用技術
 
