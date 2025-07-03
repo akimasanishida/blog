@@ -15,12 +15,15 @@ interface MonthlyArchivePageProps {
   };
 }
 
-export async function generateMetadata(
-  { params, searchParams }: MonthlyArchivePageProps
-): Promise<Metadata> {
-  const { year, month } = params;
+export async function generateMetadata({
+  params, searchParams
+}: {
+  params: Promise<MonthlyArchivePageProps['params']>,
+  searchParams?: Promise<MonthlyArchivePageProps['searchParams']>
+}): Promise<Metadata> {
+  const { year, month } = await params;
   const displayMonth = String(Number(month)); // Ensure month is displayed correctly, e.g., "07" -> "7"
-  const page = parseInt(searchParams?.page || '1', 10);
+  const page = parseInt((await searchParams)?.page || '1', 10);
   const pageSuffix = page > 1 ? ` (${page}ページ目)` : '';
   const title = `ブログアーカイブ（${year}年${displayMonth}月）${pageSuffix}`;
   const description = `${year}年${displayMonth}月の投稿一覧${pageSuffix}`;
@@ -31,9 +34,14 @@ export async function generateMetadata(
   };
 }
 
-const MonthlyArchivePage = async ({ params, searchParams }: MonthlyArchivePageProps) => {
-  const { year, month } = params;
-  const currentPage = parseInt(searchParams?.page || '1', 10);
+const MonthlyArchivePage = async ({
+  params, searchParams
+}: {
+  params: Promise<MonthlyArchivePageProps['params']>,
+  searchParams?: Promise<MonthlyArchivePageProps['searchParams']>
+}) => {
+  const { year, month } = await params;
+  const currentPage = parseInt((await searchParams)?.page || '1', 10);
 
   if (isNaN(currentPage) || currentPage < 1) {
     notFound();

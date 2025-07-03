@@ -242,14 +242,16 @@ app/
 
 必要があればテストの作成を推奨する
 
-**linter & build**
+**linter & test**
+
+```bash
+# test
+pnpm test
+```
 
 ```bash
 # linter
 pnpm lint
-
-# check to build successfully
-pnpm build
 ```
 
 **Next.js 15 以降の非同期params**

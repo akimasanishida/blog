@@ -15,11 +15,14 @@ interface YearlyArchivePageProps {
   };
 }
 
-export async function generateMetadata(
-  { params, searchParams }: YearlyArchivePageProps
-): Promise<Metadata> {
-  const year = params.year;
-  const page = parseInt(searchParams?.page || '1', 10);
+export async function generateMetadata({
+  params, searchParams
+}: {
+  params: Promise<YearlyArchivePageProps['params']>,
+  searchParams?: Promise<YearlyArchivePageProps['searchParams']>
+}): Promise<Metadata> {
+  const year = (await params).year;
+  const page = parseInt((await searchParams)?.page || '1', 10);
   const pageSuffix = page > 1 ? ` (${page}ページ目)` : '';
   const title = `ブログアーカイブ（${year}年）${pageSuffix}`;
   const description = `${year}年の投稿一覧${pageSuffix}`;
@@ -30,9 +33,15 @@ export async function generateMetadata(
   };
 }
 
-const YearlyArchivePage = async ({ params, searchParams }: YearlyArchivePageProps) => {
-  const { year } = params;
-  const currentPage = parseInt(searchParams?.page || '1', 10);
+const YearlyArchivePage = async ({
+  params, searchParams
+}: {
+  params: Promise<YearlyArchivePageProps['params']>,
+  searchParams?: Promise<YearlyArchivePageProps['searchParams']>
+}) => {
+  const { year } = await params;
+  const { page } = await searchParams || {};
+  const currentPage = parseInt(page || '1', 10);
 
   if (isNaN(currentPage) || currentPage < 1) {
     notFound();

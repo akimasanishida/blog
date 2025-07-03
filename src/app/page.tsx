@@ -9,24 +9,24 @@ import type { Metadata } from 'next';
 export const dynamic = 'force-dynamic';
 
 interface HomePageProps {
-  searchParams?: {
-    page?: string;
-  };
+  page?: string;
 }
 
 export async function generateMetadata(
-  { searchParams }: HomePageProps
+  { searchParams }: { searchParams: Promise<HomePageProps> }
 ): Promise<Metadata> {
-  const page = parseInt(searchParams?.page || '1', 10);
-  const title = `西田明正のブログ${page > 1 ? ` (${page}ページ目)` : ''}`;
+  const { page } = await searchParams || {};
+  const currentPage = parseInt(page || '1', 10);
+  const title = `西田明正のブログ${currentPage > 1 ? `（${currentPage}ページ目）` : ''}`;
   // TODO: Add description and other metadata fields as needed
   return {
     title,
   };
 }
 
-export default async function Home({ searchParams }: HomePageProps) {
-  const currentPage = parseInt(searchParams?.page || '1', 10);
+export default async function Home({ searchParams }: { searchParams: Promise<HomePageProps> }) {
+  const { page } = await searchParams || {};
+  const currentPage = parseInt(page || '1', 10);
   if (isNaN(currentPage) || currentPage < 1) {
     notFound();
   }
@@ -47,7 +47,7 @@ export default async function Home({ searchParams }: HomePageProps) {
     notFound();
   }
 
-  const pageTitle = `投稿一覧${currentPage > 1 ? ` (${currentPage}ページ目)` : ''}`;
+  const pageTitle = `投稿一覧${currentPage > 1 ? `（${currentPage}ページ目）` : ''}`;
 
   return (
     <>
@@ -58,11 +58,11 @@ export default async function Home({ searchParams }: HomePageProps) {
         <p className="text-center text-muted-foreground">表示する投稿がありません。</p>
       )}
       {totalPosts > 0 && (
-         <PaginationControls
-            currentPage={currentPage}
-            totalPages={totalPages}
-            basePath="/"
-          />
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          basePath="/"
+        />
       )}
     </>
   );

@@ -6,7 +6,7 @@ import { Post } from '../types/post';
  * The maximum number of posts to display on a single page.
  * As per the issue specification, the initial value is 7.
  */
-export const NUM_PAGINATION: number = 7;
+export const NUM_PAGINATION: number = 3;
 
 /**
  * Takes a list of all posts and a page number, and returns the posts
