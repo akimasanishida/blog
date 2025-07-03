@@ -160,7 +160,7 @@ function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [itemsPerPage, setPosts, setLoading, setError, setQueryLastDoc, setCurrentPage, setPageDocCursors, setIsNextPageAvailable]);
+  }, [itemsPerPage]);
 
   useEffect(() => {
     // Reset pagination state before fetching on sort change
