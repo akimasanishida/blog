@@ -186,6 +186,7 @@ app/
     - 記事のタイトル・投稿日・更新日（あれば）・カテゴリを表示
 - `LoginForm`（ログインフォーム）
 - `PostArticle`：投稿を表示するコンポーネント
+- `PaginationControls`：ページネーションのナビゲーション
 
 ### ライブラリ（`lib`）
 
@@ -242,14 +243,16 @@ app/
 
 必要があればテストの作成を推奨する
 
-**linter & build**
+**linter & test**
+
+```bash
+# test
+pnpm test
+```
 
 ```bash
 # linter
 pnpm lint
-
-# check to build successfully
-pnpm build
 ```
 
 **Next.js 15 以降の非同期params**

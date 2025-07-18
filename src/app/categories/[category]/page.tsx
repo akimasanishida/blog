@@ -1,50 +1,126 @@
 import PostList from '@/components/PostList';
-import { getAllPosts } from '@/lib/firebase'; // Path to firebase.ts
+import PaginationControls from '@/components/PaginationControls';
+import { getAllPosts } from '@/lib/firebase';
+import { paginatePost, NUM_PAGINATION } from '@/lib/pagination';
+import type { Post } from '@/types/post';
+import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
-const generateMetadata = async ({
-  params,
+interface CategoryPageProps {
+  params: { category: string }; // Expect params to be resolved
+  searchParams?: {
+    page?: string;
+  };
+}
+
+export async function generateMetadata({
+  params, searchParams
 }: {
-  params: Promise<{ category: string }>;
-}) => {
+  params: Promise<CategoryPageProps['params']>,
+  searchParams?: Promise<CategoryPageProps['searchParams']>
+}): Promise<Metadata> {
+  // Category from URL might be URL-encoded (e.g., "web%20development")
+  // Decode it for display purposes.
   const { category } = await params;
+  const { page } = await searchParams || {};
+  const decodedCategory = decodeURIComponent(category);
+  const currentPage = parseInt(page || '1', 10);
+  const pageSuffix = currentPage > 1 ? ` (${currentPage}ページ目)` : '';
+  // Capitalize first letter for title
+  const displayCategory = decodedCategory.charAt(0).toUpperCase() + decodedCategory.slice(1);
+  const title = `${displayCategory} カテゴリー${pageSuffix}`;
+  const description = `${displayCategory} カテゴリーの投稿一覧${pageSuffix}`;
 
   return {
-    title: `${category} カテゴリー`,
-    description: `${category}カテゴリーの投稿一覧`,
+    title,
+    description,
   };
-};
+}
 
-const CategoryPage = async ({ params }: {
-  params: Promise<{ category: string }>;
+const CategoryPage = async ({
+  params, searchParams
+}: {
+  params: Promise<CategoryPageProps['params']>,
+  searchParams?: Promise<CategoryPageProps['searchParams']>
 }) => {
-  const { category } = await params; // Await the promise to get the actual values
+  // The category from params might be URL-encoded.
+  const { category } = await params;
+  const { page } = await searchParams || {};
+  // const categoryFromParams = category;
+  const currentPage = parseInt(page || '1', 10);
 
-  const allPosts = await getAllPosts(); // Fetch all posts
-  const filteredPosts = allPosts.filter(post => 
-    post.category.toLowerCase() === category.toLowerCase()
-  );
+  if (isNaN(currentPage) || currentPage < 1) {
+    notFound();
+  }
+
+  const allPosts: Post[] = await getAllPosts();
+  // When filtering, compare with the URL-decoded category from params,
+  // and also decode the post.category if it might also contain encoded entities.
+  // However, Firestore data `post.category` is likely not URL-encoded.
+  // The comparison should be case-insensitive and handle decoded URI components.
+  const decodedCategoryFromParams = decodeURIComponent(category.toLowerCase());
+
+  const postsForCategory = allPosts.filter(post => {
+    // Assuming post.category is stored as a plain string, not URL encoded.
+    // Normalize both to lowercase for comparison.
+    return post.category?.toLowerCase() === decodedCategoryFromParams;
+  });
+
+  const totalPosts = postsForCategory.length;
+  const totalPages = Math.ceil(totalPosts / NUM_PAGINATION);
+
+  if (totalPosts > 0 && currentPage > totalPages) {
+    notFound();
+  }
+
+  if (totalPosts === 0 && currentPage > 1) {
+    notFound();
+  }
+
+  const postsForPage = paginatePost(postsForCategory, currentPage);
+
+  if (!postsForPage && currentPage > 1 && totalPosts > 0) {
+    notFound();
+  }
+
+  // For display, use the decoded category, capitalized.
+  const displayCategory = decodeURIComponent(category);
+  const capitalizedDisplayCategory = displayCategory.charAt(0).toUpperCase() + displayCategory.slice(1);
+  const pageTitle = `カテゴリー：${capitalizedDisplayCategory}${currentPage > 1 ? ` (${currentPage}ページ目)` : ''}`;
 
   return (
     <>
-      <h1>
-        カテゴリー：{category}
-      </h1>
-      <PostList posts={filteredPosts} />
+      <h1>{pageTitle}</h1>
+      {postsForPage && postsForPage.length > 0 ? (
+        <PostList posts={postsForPage} />
+      ) : (
+        <p className="text-center text-muted-foreground">このカテゴリーにはまだ投稿がありません。</p>
+      )}
+      {totalPosts > 0 && (
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          basePath={`/categories/${category}`} // Use original param for basePath to preserve encoding
+        />
+      )}
     </>
   );
 };
 
 export default CategoryPage;
-export { generateMetadata };
 
 // Optional: For SSG, if you know all possible categories
 // export async function generateStaticParams() {
 //   const allPosts = await getAllPosts();
-//   const categories = new Set(allPosts.map(post => post.category.toLowerCase()));
+//   const categories = new Set(
+//     allPosts
+//       .map(post => post.category?.toLowerCase())
+//       .filter(Boolean) as string[] // Ensure category exists and filter out undefined
+//   );
 //   return Array.from(categories).map(category => ({ 
-//     // URL-encode the category slug if it contains spaces or special characters
+//     // URL-encode the category slug for the path
 //     category: encodeURIComponent(category) 
 //   }));
 // }
