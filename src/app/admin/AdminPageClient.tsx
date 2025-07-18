@@ -18,31 +18,33 @@ import {
   collection, query, orderBy, getDocs, Timestamp, doc, updateDoc, deleteDoc, serverTimestamp, 
   OrderByDirection, limit, startAfter, QueryDocumentSnapshot
 } from 'firebase/firestore';
+import { PostWithId } from '@/types/post';
+import { formatJpDateFromTimestamp } from '@/lib/format';
+import { getAllPostsForAdmin } from '@/lib/firebase';
 
+function sortPosts(
+  postsToSort: PostWithId[],
+  field: 'publishDate' | 'updateDate',
+  direction: OrderByDirection,
+) {
+  return [...postsToSort].sort((a, b) => {
+    if (field === 'publishDate' && direction === 'desc' && a.isPublic !== b.isPublic) {
+      return a.isPublic ? 1 : -1; // Drafts first when sorting by publishDate desc
+    }
 
-// Define the Post interface
-interface Post {
-  id: string;
-  title: string;
-  slug: string;
-  publishDate: Timestamp;
-  updateDate: Timestamp;
-  category: string;
-  isPublic: boolean;
+    const aDate = a[field];
+    const bDate = b[field];
+    const aVal = aDate ? aDate.toMillis() : Number.POSITIVE_INFINITY;
+    const bVal = bDate ? bDate.toMillis() : Number.POSITIVE_INFINITY;
+
+    return direction === 'asc' ? aVal - bVal : bVal - aVal;
+  });
 }
 
-const formatDate = (timestamp: Timestamp | undefined | null): string => {
-  if (!timestamp) return 'N/A';
-  return timestamp.toDate().toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
-};
 
 function AdminPage() {
   const router = useRouter();
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState<PostWithId[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
@@ -78,8 +80,18 @@ function AdminPage() {
     setError(null);
     try {
       const postsCollectionRef = collection(db, "posts");
-      let q;
-      const baseQuery = query(postsCollectionRef, orderBy(currentSortField, currentSortDirection));
+      let baseQuery;
+
+      if (currentSortField === "publishDate" && currentSortDirection === "desc") {
+        // Sort by isPublic (false then true), then by publishDate descending.
+        // This brings unpublished (isPublic: false) posts to the top when sorting by publishDate desc.
+        baseQuery = query(postsCollectionRef, orderBy("isPublic", "asc"), orderBy(currentSortField, currentSortDirection));
+      } else {
+        // Standard sorting for all other cases
+        baseQuery = query(postsCollectionRef, orderBy(currentSortField, currentSortDirection));
+      }
+
+      let q; // Query variable to be used for pagination
 
       if (pageAction === "first") {
         // setCurrentPage(1) and setPageDocCursors([null]) are handled by the caller (main useEffect)
@@ -99,19 +111,13 @@ function AdminPage() {
       }
 
       const querySnapshot = await getDocs(q);
-      const fetchedPosts: Post[] = querySnapshot.docs.map(docSnap => {
-        const data = docSnap.data();
-        return {
-          id: docSnap.id,
-          title: data.title || "No Title",
-          slug: data.slug || "",
-          publishDate: data.publishDate as Timestamp,
-          updateDate: data.updateDate as Timestamp,
-          category: data.category || "Uncategorized",
-          isPublic: data.isPublic === undefined ? true : data.isPublic,
-        };
-      });
-      setPosts(fetchedPosts);
+      const fetchedPosts: PostWithId[] = await getAllPostsForAdmin();
+      const sortedPosts = sortPosts(
+        fetchedPosts,
+        currentSortField as 'publishDate' | 'updateDate',
+        currentSortDirection,
+      );
+      setPosts(sortedPosts);
       const newLastDoc = querySnapshot.docs[querySnapshot.docs.length - 1] || null;
       setQueryLastDoc(newLastDoc);
 
@@ -154,7 +160,7 @@ function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }, [itemsPerPage, setPosts, setLoading, setError, setQueryLastDoc, setCurrentPage, setPageDocCursors, setIsNextPageAvailable]);
+  }, [itemsPerPage]);
 
   useEffect(() => {
     // Reset pagination state before fetching on sort change
@@ -195,10 +201,26 @@ function AdminPage() {
     setActionLoading(prev => ({ ...prev, [postId]: true }));
     try {
       const postRef = doc(db, "posts", postId);
-      await updateDoc(postRef, {
+
+      // Data to update in Firestore
+      const updateData: { isPublic: boolean; publishDate?: Timestamp | import("firebase/firestore").FieldValue } = { // Using correct type for serverTimestamp flexibility
         isPublic: !currentIsPublic,
-        updateDate: serverTimestamp()
-      });
+      };
+
+      // If we are publishing the post (i.e., currentIsPublic is false, so !currentIsPublic is true)
+      if (!currentIsPublic) {
+        // Find the post in the local state to check its current publishDate
+        const postToToggle = posts.find(p => p.id === postId);
+        // If the post is found and its publishDate is null (or undefined), set it
+        // This assumes 'Post' interface has 'publishDate: Timestamp | null;'
+        if (postToToggle && !postToToggle.publishDate) {
+          updateData.publishDate = serverTimestamp();
+        }
+      }
+      // No changes to updateDate in this operation
+
+      await updateDoc(postRef, updateData);
+
       // Refetch the first page to reflect changes
       setCurrentPage(1); 
       setQueryLastDoc(null);
@@ -213,7 +235,7 @@ function AdminPage() {
       });
     } catch (err) {
       console.error("Error toggling publish state:", err);
-      setError("Failed to update post status."); // Provide user feedback
+      setError("Failed to update post status.");
     } finally {
       setActionLoading(prev => ({ ...prev, [postId]: false }));
     }
@@ -311,8 +333,8 @@ function AdminPage() {
                 </TableCell>
                 <TableCell>{post.category}</TableCell>
                 <TableCell>{post.isPublic ? "公開中" : "下書き"}</TableCell>
-                <TableCell>{formatDate(post.publishDate)}</TableCell>
-                <TableCell>{formatDate(post.updateDate)}</TableCell>
+                <TableCell>{formatJpDateFromTimestamp(post.publishDate) || "---"}</TableCell>
+                <TableCell>{formatJpDateFromTimestamp(post.updateDate) || "---"}</TableCell>
                 <TableCell>
                   {post.slug && post.isPublic ? (
                     <Link href={`/posts/${post.slug}`} target="_blank" rel="noopener noreferrer">

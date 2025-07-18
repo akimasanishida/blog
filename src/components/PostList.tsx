@@ -1,13 +1,10 @@
 import Link from 'next/link';
-import type { PostListItem } from '../types/post'; // Adjusted path
+import type { Post } from '../types/post'; // Adjusted path
 import { CalendarPlus, ClockClockwise } from "@/components/Icons"; // Adjusted import path
-import { formatJpDate } from '@/lib/format';
+import { formatJpDateFromTimestamp } from "@/lib/format"; // Adjusted import path
 
-interface PostListProps {
-  posts: PostListItem[];
-}
 
-const PostList: React.FC<PostListProps> = ({ posts }) => {
+const PostList = ({ posts }: { posts: Post[] }) => {
   if (!posts || posts.length === 0) {
     return <p className="text-center text-muted-foreground">No posts found.</p>;
   }
@@ -22,18 +19,24 @@ const PostList: React.FC<PostListProps> = ({ posts }) => {
             </Link>
           </h2>
           <div className="text-sm text-muted-foreground flex items-center">
-            <CalendarPlus className='inline-block w-5 h-5'/> <span className="ml-1">{formatJpDate(post.publishDate)}</span>
+            {post.publishDate && (
+              <>
+                <CalendarPlus className='inline-block w-5 h-5'/> <span className="ml-1">{formatJpDateFromTimestamp(post.publishDate)}</span>
+              </>
+            )}
             {post.updateDate && (
               <span className="ml-4">
-                <ClockClockwise className='inline-block w-5 h-5'/> <span className="ml-1">{formatJpDate(post.updateDate)}</span>
+                <ClockClockwise className='inline-block w-5 h-5'/> <span className="ml-1">{formatJpDateFromTimestamp(post.updateDate)}</span>
               </span>
             )}
           </div>
           <div className="text-sm text-muted-foreground">
             カテゴリー：<span className="font-bold">
+            {post.category && (
               <Link href={`/categories/${encodeURIComponent(post.category.toLowerCase())}`} className='!text-muted-foreground'>
-              {post.category}
-            </Link>
+                {post.category}
+              </Link>
+            )}
             </span>
           </div>
         </li>

@@ -1,5 +1,10 @@
-export function formatJpDate(dateString: string) {
-  return new Date(dateString).toLocaleDateString("ja-JP", {
+import { Timestamp } from "firebase/firestore";
+
+export function formatJpDateFromDate(date: Date | null | undefined) {
+  if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+    return undefined;
+  }
+  return date.toLocaleDateString("ja-JP", {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -7,4 +12,27 @@ export function formatJpDate(dateString: string) {
     minute: '2-digit',
     timeZone: 'Asia/Tokyo',
   });
+}
+
+export function formatJpDateFromString(dateString: string | null | undefined) {
+  if (!dateString) {
+    return undefined;
+  }
+  return formatJpDateFromDate(new Date(dateString));
+}
+
+export function formatJpDateFromTimestamp(timestamp: Timestamp | { seconds: number, nanoseconds: number } | null | undefined) {
+  if (!timestamp) {
+    return undefined;
+  }
+  let date: Date | undefined;
+  if (timestamp instanceof Timestamp) {
+    date = timestamp.toDate();
+  } else if (typeof timestamp === "object" && typeof timestamp.seconds === "number") {
+    // Convert plain object to Timestamp
+    date = new Date(timestamp.seconds * 1000);
+  } else {
+    return undefined;
+  }
+  return formatJpDateFromDate(date);
 }

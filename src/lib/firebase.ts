@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth'; // Added for Firebase Auth
 import { getStorage, FirebaseStorage } from 'firebase/storage'; // Added for Firebase Storage
-import type { PostDetail } from '../types/post'; // Adjust path as needed after moving types
+import type { Post, PostWithId } from '../types/post'; // Adjust path as needed after moving types
 
 // Confirmed Firebase project configuration
 const firebaseConfig = {
@@ -39,10 +39,10 @@ export { app, db, auth, storage }; // Export storage
 
 /**
  * Fetches all posts with their full content from Firestore.
- * Returns a promise resolving to an array of PostDetail objects,
+ * Returns a promise resolving to an array of Post objects,
  * sorted by publishDate in descending order.
  */
-export const getAllPosts = async (): Promise<PostDetail[]> => {
+export const getAllPosts = async (): Promise<Post[]> => {
   try {
     const postsCollection = collection(db, "posts");
     // 追加: isPublic が true のみ取得
@@ -53,15 +53,17 @@ export const getAllPosts = async (): Promise<PostDetail[]> => {
     );
     const querySnapshot = await getDocs(q);
 
-    const posts: PostDetail[] = querySnapshot.docs.map(docSnap => {
+    const posts: Post[] = querySnapshot.docs.map(docSnap => {
       const data = docSnap.data();
       return {
         slug: data.slug,
         title: data.title || "untitled",
-        publishDate: (data.publishDate as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
-        updateDate: (data.updateDate as Timestamp)?.toDate().toISOString(),
+        isPublic: data.isPublic,
+        publishDate: data.publishDate as Timestamp || undefined,
+        updateDate: data.updateDate as Timestamp || undefined,
         category: data.category || "uncategorized",
         content: data.content || "",
+        tags: data.tags || [],
       };
     });
     
@@ -71,11 +73,41 @@ export const getAllPosts = async (): Promise<PostDetail[]> => {
   }
 };
 
+export const getAllPostsForAdmin = async (): Promise<PostWithId[]> => {
+  try {
+    const postsCollection = collection(db, "posts");
+    // 追加: isPublic の制限なし
+    const q = query(
+      postsCollection,
+      orderBy("publishDate", "desc")
+    );
+    const querySnapshot = await getDocs(q);
+
+    const posts: PostWithId[] = querySnapshot.docs.map(docSnap => {
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        slug: data.slug,
+        title: data.title || "untitled",
+        isPublic: data.isPublic,
+        publishDate: data.publishDate as Timestamp || undefined,
+        updateDate: data.updateDate as Timestamp || undefined,
+        category: data.category || "uncategorized",
+        content: data.content || "",
+        tags: data.tags || [],
+      };
+    });
+    return posts;
+  } catch {
+    return [];
+  }
+};
+
 /**
  * Fetches a single post by its slug (document ID) from Firestore.
- * Returns a promise resolving to a PostDetail object or null if not found.
+ * Returns a promise resolving to a Post object or null if not found.
  */
-export const getPostBySlug = async (slug: string): Promise<PostDetail | null> => {
+export const getPostBySlug = async (slug: string): Promise<Post | null> => {
   try {
     const postsCollection = collection(db, "posts");
     // 追加: isPublic が true のみ取得
@@ -89,13 +121,15 @@ export const getPostBySlug = async (slug: string): Promise<PostDetail | null> =>
     if (!querySnapshot.empty) {
       const docSnap = querySnapshot.docs[0];
       const data = docSnap.data();
-      const post: PostDetail = {
+      const post: Post = {
         slug: data.slug,
         title: data.title || "untitled",
-        publishDate: (data.publishDate as Timestamp)?.toDate().toISOString() || new Date().toISOString(),
-        updateDate: (data.updateDate as Timestamp)?.toDate().toISOString(),
+        isPublic: data.isPublic,
+        publishDate: data.publishDate as Timestamp || undefined,
+        updateDate: data.updateDate as Timestamp || undefined,
         category: data.category || "uncategorized",
         content: data.content || "",
+        tags: data.tags || [],
       };
       return post;
     } else {

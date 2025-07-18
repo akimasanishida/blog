@@ -1,19 +1,69 @@
 import PostList from '@/components/PostList';
-import { getAllPosts } from '@/lib/firebase'; // Path to firebase.ts
-import type { PostListItem } from '@/types/post'; // Path to post types
+import PaginationControls from '@/components/PaginationControls';
+import { getAllPosts } from '@/lib/firebase';
+import { paginatePost, NUM_PAGINATION } from '@/lib/pagination';
+import type { Post } from '@/types/post';
+import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
-// This page needs to be an async component to fetch data
-export default async function Home() {
-  const posts: PostListItem[] = await getAllPosts();
+interface HomePageProps {
+  page?: string;
+}
+
+export async function generateMetadata(
+  { searchParams }: { searchParams: Promise<HomePageProps> }
+): Promise<Metadata> {
+  const { page } = await searchParams || {};
+  const currentPage = parseInt(page || '1', 10);
+  const title = `西田明正のブログ${currentPage > 1 ? `（${currentPage}ページ目）` : ''}`;
+  // TODO: Add description and other metadata fields as needed
+  return {
+    title,
+  };
+}
+
+export default async function Home({ searchParams }: { searchParams: Promise<HomePageProps> }) {
+  const { page } = await searchParams || {};
+  const currentPage = parseInt(page || '1', 10);
+  if (isNaN(currentPage) || currentPage < 1) {
+    notFound();
+  }
+
+  const allPosts: Post[] = await getAllPosts();
+  const totalPosts = allPosts.length;
+  const totalPages = Math.ceil(totalPosts / NUM_PAGINATION);
+
+  if (totalPosts > 0 && currentPage > totalPages) {
+    notFound();
+  }
+
+  const postsForPage = paginatePost(allPosts, currentPage);
+
+  if (!postsForPage && totalPosts > 0) {
+    // This case should ideally be caught by currentPage > totalPages,
+    // but as a safeguard if paginatePost returns undefined for other reasons.
+    notFound();
+  }
+
+  const pageTitle = `投稿一覧${currentPage > 1 ? `（${currentPage}ページ目）` : ''}`;
 
   return (
     <>
-      <h1>
-        投稿一覧
-      </h1>
-      <PostList posts={posts} />
+      <h1>{pageTitle}</h1>
+      {postsForPage && postsForPage.length > 0 ? (
+        <PostList posts={postsForPage} />
+      ) : (
+        <p className="text-center text-muted-foreground">表示する投稿がありません。</p>
+      )}
+      {totalPosts > 0 && (
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          basePath="/"
+        />
+      )}
     </>
   );
 }

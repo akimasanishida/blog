@@ -6,6 +6,21 @@
 
 ## サイトの構成
 
+## プロジェクト構成
+
+本プロジェクトの主なディレクトリ・ファイル構成は以下の通りです。  
+`app/` 以下のページ構成については「## サイトの構成」を参照してください。
+
+```
+components/         # サイト全体で使う共通UIコンポーネント（Header, Footer, PostList, SearchBox など）
+components/ui/      # shadcn/ui
+lib/                # FirebaseやMarkdown変換などのライブラリ・ユーティリティ
+types/              # 型定義
+```
+
+- 主要なロジックやUI部品は `components/` および `lib/` に配置します。
+- 型定義は `types/` にまとめて管理します。
+
 ### ディレクトリ構成
 
 | ページ           | パス                       | 内容                                      |
@@ -148,7 +163,7 @@ app/
 
 カスタムクレーム `admin` を追加済み
 
-### コンポーネント
+### コンポーネント（`components`）
 
 - `Header`（ナビゲーション）
     - 左揃えでブログタイトル（クリックすると `/` へ）
@@ -171,6 +186,32 @@ app/
     - 記事のタイトル・投稿日・更新日（あれば）・カテゴリを表示
 - `LoginForm`（ログインフォーム）
 - `PostArticle`：投稿を表示するコンポーネント
+- `PaginationControls`：ページネーションのナビゲーション
+
+### ライブラリ（`lib`）
+
+- firebase.ts: Firebase を用いたデータの取得・送信
+  - `getAllPosts`: すべての公開中の投稿を取得する
+  - `getAllPostsForAdmin`: 下書きを含むすべての投稿を取得する
+  - `getPostBySlug`: slug を用いて公開中の投稿とその中身を取得する
+- firebaseAdmin.ts: Firebase の Admin 操作を行うための権限を取得
+- format.ts: 日付時刻のフォーマット
+  - `formatJpDateFromDate`: `Date` をフォーマット済み日付時刻文字列へ変換
+  - `formatJpDateFromString`: `string` をフォーマット済み日付時刻文字列へ変換
+  - `formatJpDateFromTimestamp`: Firebase の `Timestamp` をフォーマット済み日付時刻文字列へ変換
+- markdown.ts: マークダウンのレンダリング
+  - `renderMarkdownToHTML`: Markdown を HTML へレンダリング
+- pagination.ts: ページネーションのための機能
+  - `paginationPosts`: 投稿一覧より、指定されたページのみの投稿一覧を返す
+- utils.ts: 外部ライブラリにより作成されたと思われる
+
+### 型（`types`）
+
+- image.ts
+  - `ImageInfo`: 画像の情報
+- post.ts
+  - `Post`: 投稿の情報
+  - `PostWithId`: `Post` の拡張。Firebase Database の `id` もとる。
 
 ## 使用技術
 
@@ -200,16 +241,18 @@ app/
 
 **テスト**
 
-テストは不要
+必要があればテストの作成を推奨する
 
-**linter & build**
+**linter & test**
+
+```bash
+# test
+pnpm test
+```
 
 ```bash
 # linter
 pnpm lint
-
-# check to build successfully
-pnpm build
 ```
 
 **Next.js 15 以降の非同期params**
@@ -241,4 +284,15 @@ export default ResultPage;
 ```
 Type error: Type '{ params: { id: string; }; }' does not satisfy the constraint 'PageProps'.
 Type '{ id: string; }' is missing the following properties from type 'Promise<any>': then, catch, finally, [Symbol.toStringTag]
+```
+
+**DO NOT USE type `any`**
+
+`any` is prohibited in TypeScript (though it is allowed in JavaScript).
+Specify a different type.
+
+エラー例：
+
+```
+Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
 ```

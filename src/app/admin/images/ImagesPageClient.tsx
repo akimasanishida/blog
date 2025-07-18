@@ -11,13 +11,7 @@ import {
   ref, uploadBytesResumable, getDownloadURL, listAll, deleteObject 
 } from 'firebase/storage';
 import ImageDetailOverlay, { ImageInfo as OverlayImageInfo } from '@/components/ImageDetailOverlay'; // Import the new component
-
-// Local ImageInfo for this page's list state. It's structurally identical to OverlayImageInfo.
-interface ImageInfo {
-  url: string;
-  name: string;
-  refPath: string; 
-}
+import { ImageInfo } from '@/types/image';
 
 const STORAGE_IMAGE_PATH = "images/posts/";
 

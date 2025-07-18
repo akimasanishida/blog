@@ -6,16 +6,16 @@ import SearchBox from '@/components/SearchBox';
 import { getAllPosts } from '@/lib/firebase';
 import PostList from '@/components/PostList';
 import Fuse from 'fuse.js';
-import type { PostDetail } from '@/types/post';
+import type { Post } from '@/types/post';
 
 export const SearchResultsPageContent: React.FC = () => {
   const searchParams = useSearchParams();
   const query = searchParams.get('q');
 
-  const [, setAllPosts] = useState<PostDetail[]>([]);
-  const [searchResults, setSearchResults] = useState<PostDetail[]>([]);
+  const [, setAllPosts] = useState<Post[]>([]);
+  const [searchResults, setSearchResults] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [fuseInstance, setFuseInstance] = useState<Fuse<PostDetail> | null>(null);
+  const [fuseInstance, setFuseInstance] = useState<Fuse<Post> | null>(null);
 
   useEffect(() => {
     const fetchPosts = async () => {

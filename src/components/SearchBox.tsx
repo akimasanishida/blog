@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, FormEvent } from 'react';
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 
 const SearchBox = () => {
   const router = useRouter();
@@ -30,7 +30,7 @@ const SearchBox = () => {
         type="submit"
         className="px-3 py-2 border border-primary bg-primary text-primary-foreground rounded cursor-pointer text-sm"
       >
-        <MagnifyingGlass size={20} weight="bold" />
+        <MagnifyingGlassIcon size={20} weight="bold" />
       </button>
     </form>
   );
