@@ -1,0 +1,16 @@
+[site]
+title = "西田明正のブログ"
+description = "西田明正（Akimasa NISHIDA）のブログへようこそ。ここでは、ソフトウェア開発や日常の考えなどを公開しています。"
+base_url = "https://blog.akimasanishida.com"
+og_image = "og-image.jpg"  # SNSで表示されるカード画像
+visibility = "public"  # "public" (全体公開) or "private" (ログインユーザのみ). Default is "private".
+locale = "ja_JP"  # Default is "ja_JP".
+author = "西田明正（Akimasa, NISHIDA）"
+hp_url = "https://akimasanishida.com"  # ホームページURL
+
+[site.social]
+x = "akimasa_nishida"
+github = "akimasanishida"
+
+[archive]
+posts_per_page = 7  # 1ページあたりの表示件数。デフォルトは7件。

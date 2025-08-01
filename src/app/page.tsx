@@ -5,6 +5,7 @@ import { paginatePost, NUM_PAGINATION } from '@/lib/pagination';
 import type { Post } from '@/types/post';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import appConfig from '@/lib/appConfig';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,8 +18,7 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { page } = await searchParams || {};
   const currentPage = parseInt(page || '1', 10);
-  const title = `西田明正のブログ${currentPage > 1 ? `（${currentPage}ページ目）` : ''}`;
-  // TODO: Add description and other metadata fields as needed
+  const title = [appConfig.site.title, currentPage > 1 ? `（${currentPage}ページ目）` : null].filter(Boolean).join('');
   return {
     title,
   };

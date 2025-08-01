@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { getAllPosts } from '@/lib/firebase'; // Adjust path if necessary
-import type { Post } from '@/types/post'; // Adjust path if necessary
+import { getAllPosts } from '@/lib/firebase';
+import type { Post } from '@/types/post';
 import SearchBox from './SearchBox';
+import { useAppConfig } from '@/context/AppConfigContext';
 
 
 const Footer = () => {
@@ -88,6 +89,8 @@ const Footer = () => {
     });
   };
 
+  const config = useAppConfig();
+
   return (
     <footer className='border-t py-8'>
       <div className='flex justify-around mb-8 flex-wrap'>
@@ -161,7 +164,7 @@ const Footer = () => {
         </div>
       </div>
       <div className='text-center text-sm'>
-        © {currentYear} 西田明正 (Akimasa NISHIDA).
+        © {currentYear} {config.site.author}.
       </div>
     </footer>
   );

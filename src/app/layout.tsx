@@ -4,6 +4,8 @@ import { Noto_Sans_JP } from 'next/font/google'
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import appConfig from "@/lib/appConfig";
+import AppConfigProvider from "@/components/AppConfigProvider";
 
 const notoSansJP = Noto_Sans_JP({
   subsets: ['latin'],
@@ -11,33 +13,35 @@ const notoSansJP = Noto_Sans_JP({
   display: 'swap',
 })
 
+const og_imageUrl = new URL(appConfig.site.og_image, appConfig.site.base_url).toString();
+
 export const metadata: Metadata = {
   title: {
-    default: "西田明正のブログ",
-    template: "%s | 西田明正のブログ",
+    default: appConfig.site.title,
+    template: "%s | " + appConfig.site.title,
   },
-  description: "西田明正（Akimasa NISHIDA）のブログへようこそ。ここでは、ソフトウェア開発や日常の考えなどを公開しています。",
+  description: appConfig.site.description,
   openGraph: {
-    title: "西田明正のブログ",
-    description: "西田明正（Akimasa NISHIDA）のブログへようこそ。ここでは、ソフトウェア開発や日常の考えなどを公開しています。",
-    url: "https://blog.akimasanishida.com",
-    siteName: "西田明正のブログ",
+    title: appConfig.site.title,
+    description: appConfig.site.description,
+    url: appConfig.site.base_url,
+    siteName: appConfig.site.title,
     images: [
       {
-        url: "https://blog.akimasanishida.com/og-image.jpg",
+        url: og_imageUrl,
         width: 1200,
         height: 630,
-        alt: "西田明正のブログのOGP画像",
+        alt: (appConfig.site.title || "") + "のOGP画像",
       },
     ],
-    locale: "ja_JP",
+    locale: appConfig.site.locale,
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "西田明正のブログ",
-    description: "西田明正（Akimasa NISHIDA）のブログへようこそ。ここでは、ソフトウェア開発や日常の考えなどを公開しています。",
-    images: ["https://blog.akimasanishida.com/og-image.jpg"],
+    title: appConfig.site.title,
+    description: appConfig.site.description,
+    images: [og_imageUrl],
   },
 };
 
@@ -49,12 +53,13 @@ export default function RootLayout({
   return (
     <html lang="ja" className={notoSansJP.className} suppressHydrationWarning>
       <body>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AppConfigProvider config={appConfig}>
             <Header />
             <div className="main-content py-4 px-4 sm:px-6 lg:px-12 pt-16 pb-2 mx-auto max-w-screen-lg">
               <main>
@@ -62,7 +67,8 @@ export default function RootLayout({
               </main>
               <Footer />
             </div>
-          </ThemeProvider>
+          </AppConfigProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
