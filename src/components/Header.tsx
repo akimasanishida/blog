@@ -2,17 +2,16 @@
 
 import Link from 'next/link';
 import { ModeToggle } from './ModeToggle';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { ListIcon, XIcon } from '@phosphor-icons/react';
 import { auth } from '@/lib/firebase'; // Firebase Auth インスタンスのパスは適宜修正
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppConfig } from '@/context/AppConfigContext';
-
-import { useEffect } from 'react';
 
 const Header = () => {
   const router = useRouter();
+  const pathname = usePathname();
   const [user, loading] = useAuthState(auth);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -37,9 +36,13 @@ const Header = () => {
     };
   }, [user]);
 
+  const handleLogin = () => {
+    router.replace(`/login?redirectTo=${pathname}`);
+    setMenuOpen(false);
+  };
   const handleLogout = async () => {
     await auth.signOut();
-    router.push('/admin');
+    router.push('/login');
     setMenuOpen(false);
   };
   const config = useAppConfig();
@@ -86,9 +89,9 @@ const Header = () => {
             Logout
           </button>
         ) : (
-          <Link href="/login" className="!text-foreground link-no-underline" onClick={() => setMenuOpen(false)}>
+          <button className="!text-foreground link-no-underline" onClick={handleLogin}>
             Login
-          </Link>
+          </button>
         )}
       </li>
     </ul>
