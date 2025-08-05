@@ -139,3 +139,38 @@ export const getPostBySlug = async (slug: string): Promise<Post | null> => {
     return null;
   }
 };
+
+/**
+ * Fetches a single post by its slug (document ID) from Firestore, without filtering by isPublic.
+ * Returns a promise resolving to a Post object or null if not found.
+ */
+export const getPostBySlugUnfiltered = async (slug: string): Promise<Post | null> => {
+  try {
+    const postsCollection = collection(db, "posts");
+    const q = query(
+      postsCollection,
+      where("slug", "==", slug)
+    );
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      const docSnap = querySnapshot.docs[0];
+      const data = docSnap.data();
+      const post: Post = {
+        slug: data.slug,
+        title: data.title || "untitled",
+        isPublic: data.isPublic,
+        publishDate: data.publishDate as Timestamp || undefined,
+        updateDate: data.updateDate as Timestamp || undefined,
+        category: data.category || "uncategorized",
+        content: data.content || "",
+        tags: data.tags || [],
+      };
+      return post;
+    } else {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+};
