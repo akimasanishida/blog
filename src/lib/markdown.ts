@@ -9,6 +9,7 @@ import rehypePrismPlus from 'rehype-prism-plus';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import rehypeStringify from 'rehype-stringify';
 import rehypeSlug from 'rehype-slug';
+import { convertMarkdownImageUrls } from './imageUtils';
 
 /**
  * Renders Markdown content to HTML with various plugins.
@@ -16,7 +17,8 @@ import rehypeSlug from 'rehype-slug';
  * @returns An object containing the rendered HTML and extracted frontmatter data.
  */
 export const renderMarkdownToHTML = async (markdownContent: string): Promise<string> => {
-  // 1. Parse frontmatter
+  // 1. 画像URLを新しいメディアルートに変換
+  const convertedContent = convertMarkdownImageUrls(markdownContent);
 
   // 2. Process Markdown to HTML
   const processor = unified()
@@ -37,7 +39,7 @@ export const renderMarkdownToHTML = async (markdownContent: string): Promise<str
     })
     .use(rehypeStringify);                // Convert HTML AST to string
 
-  const result = await processor.process(markdownContent);
+  const result = await processor.process(convertedContent);
   const contentHtml = result.toString();
 
   return contentHtml;

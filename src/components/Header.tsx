@@ -8,6 +8,7 @@ import { ListIcon, XIcon } from '@phosphor-icons/react';
 import { auth } from '@/lib/firebase'; // Firebase Auth インスタンスのパスは適宜修正
 import { useState, useEffect } from 'react';
 import { useAppConfig } from '@/context/AppConfigContext';
+import { deleteSessionCookie } from '@/app/actions/delete-session-cookie';
 
 const Header = () => {
   const router = useRouter();
@@ -42,6 +43,7 @@ const Header = () => {
   };
   const handleLogout = async () => {
     await auth.signOut();
+    await deleteSessionCookie();
     router.push('/login');
     setMenuOpen(false);
   };

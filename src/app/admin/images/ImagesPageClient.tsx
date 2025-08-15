@@ -31,12 +31,11 @@ function AdminImagesPage() {
     try {
       const imagesListRef = ref(storage, STORAGE_IMAGE_PATH);
       const res = await listAll(imagesListRef);
-      const fetchedImageInfo: ImageInfo[] = await Promise.all(
-        res.items.map(async (itemRef) => {
-          const url = await getDownloadURL(itemRef);
-          return { url, name: itemRef.name, refPath: itemRef.fullPath };
-        })
-      );
+      const fetchedImageInfo: ImageInfo[] = res.items.map((itemRef) => {
+        // 新しいメディアルートを使用: /media/images/posts/filename.jpg
+        const url = `/media/${itemRef.fullPath}`;
+        return { url, name: itemRef.name, refPath: itemRef.fullPath };
+      });
       fetchedImageInfo.sort((a, b) => a.name.localeCompare(b.name));
       setImages(fetchedImageInfo);
     } catch (err) {

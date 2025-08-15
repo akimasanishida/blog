@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import { auth } from '@/lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import LoginForm from './LoginForm';
-import { usePathname } from 'next/navigation';
+import { redirect } from 'next/navigation';
 
 // Basic Loading Component
 const LoadingSpinner = () => (
@@ -18,7 +17,6 @@ export default function withAdminAuth<P extends object>(WrappedComponent: React.
     const [user, setUser] = useState<User | null>(null);
     const [isAdmin, setIsAdmin] = useState<boolean>(false);
     const [loading, setLoading] = useState(true);
-    const pathname = usePathname();
 
     useEffect(() => {
       const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -43,12 +41,12 @@ export default function withAdminAuth<P extends object>(WrappedComponent: React.
     }
 
     // 未ログイン
-    if (!user && pathname && pathname.startsWith('/admin')) {
-      return <LoginForm />;
+    if (!user) {
+      redirect('/login');
     }
 
     // ログイン済みだがadmin権限なし
-    if (user && !isAdmin && pathname && pathname.startsWith('/admin')) {
+    if (user && !isAdmin) {
       return (
         <div className="flex flex-col items-center justify-center min-h-screen">
           <div className="text-xl font-bold text-red-600 mb-4">管理者権限がありません</div>

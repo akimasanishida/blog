@@ -111,12 +111,11 @@ function AdminPostPage() {
     try {
       const imagesListRef = ref(storage, STORAGE_IMAGE_PATH);
       const res = await listAll(imagesListRef);
-      const fetchedImageInfo: ImageInfo[] = await Promise.all(
-        res.items.map(async (itemRef) => {
-          const url = await getDownloadURL(itemRef);
-          return { url, name: itemRef.name, refPath: itemRef.fullPath };
-        })
-      );
+      const fetchedImageInfo: ImageInfo[] = res.items.map((itemRef) => {
+        // 新しいメディアルートを使用: /media/images/posts/filename.jpg
+        const url = `/media/${itemRef.fullPath}`;
+        return { url, name: itemRef.name, refPath: itemRef.fullPath };
+      });
       fetchedImageInfo.sort((a, b) => a.name.localeCompare(b.name));
       setImages(fetchedImageInfo);
     } catch (err) {
@@ -225,13 +224,14 @@ function AdminPostPage() {
       },
       async () => {
         try {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          const newImage: ImageInfo = { url: downloadURL, name: fileName, refPath: uploadTask.snapshot.ref.fullPath };
+          // 新しいメディアルートを使用
+          const url = `/media/${uploadTask.snapshot.ref.fullPath}`;
+          const newImage: ImageInfo = { url, name: fileName, refPath: uploadTask.snapshot.ref.fullPath };
           setImages(prevImages => [...prevImages, newImage].sort((a, b) => a.name.localeCompare(b.name)));
           setSelectedImageForOverlay(newImage); // Show overlay instead of direct insert
         } catch (err) {
-          console.error("Error getting download URL or updating image list:", err);
-          setImageError("Upload succeeded but failed to update image list or get URL.");
+          console.error("Error updating image list:", err);
+          setImageError("Upload succeeded but failed to update image list.");
         } finally {
           setIsUploading(false);
           setUploadProgress(0);

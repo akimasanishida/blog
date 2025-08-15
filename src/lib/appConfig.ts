@@ -12,7 +12,6 @@ const defaultConfig = {
         description: "Next.js で構築された Markdown ブログです。",
         base_url: "https://example.com",
         og_image: "og-image.jpg",
-        visibility: "private",
         locale: "ja_JP",
         author: "著者名",
         social: {
