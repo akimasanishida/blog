@@ -3,14 +3,13 @@ import { cookies } from "next/headers";
 import { NextRequest } from "next/server";
 import { adminAuth } from "@/lib/firebaseAdmin";
 import * as admin from "firebase-admin";
-import appConfig from "@/lib/appConfig";
 
 export const runtime = "nodejs"; // Admin SDK 利用のため Edge ではなく Node
 export const dynamic = "force-dynamic"; // 認証有無で応答が変わるため
 
 const LOGIN_REQUIRED = process.env.NEXT_PUBLIC_SITE_VISIBILITY === "private";
 
-async function verifyAdminAuth(req: NextRequest) {
+async function verifyAdminAuth() {
   if (!LOGIN_REQUIRED) return true; // 公開モードならスキップ
 
   try {
@@ -45,7 +44,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
-  const isAuthorized = await verifyAdminAuth(req);
+  const isAuthorized = await verifyAdminAuth();
   if (!isAuthorized) {
     // 他の認証APIと整合性を保つため、適切なステータスコードを返す
     return new Response("Unauthorized", { status: 401 });

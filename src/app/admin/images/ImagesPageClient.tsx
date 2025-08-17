@@ -8,7 +8,7 @@ import { TrashIcon, CloudArrowUpIcon, ArrowsClockwiseIcon, WarningCircleIcon} fr
 import withAdminAuth from '@/components/withAdminAuth';
 import { storage } from '@/lib/firebase';
 import { 
-  ref, uploadBytesResumable, getDownloadURL, listAll, deleteObject 
+  ref, uploadBytesResumable, deleteObject 
 } from 'firebase/storage';
 import ImageDetailOverlay, { ImageInfo as OverlayImageInfo } from '@/components/ImageDetailOverlay'; // Import the new component
 import { ImageInfo } from '@/types/image';

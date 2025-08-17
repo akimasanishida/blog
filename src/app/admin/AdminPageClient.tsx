@@ -15,8 +15,8 @@ import { CaretUpIcon, CaretDownIcon } from '@phosphor-icons/react';
 import withAdminAuth from '@/components/withAdminAuth';
 import { db } from '@/lib/firebase';
 import { 
-  collection, query, orderBy, getDocs, Timestamp, doc, updateDoc, deleteDoc, serverTimestamp, 
-  OrderByDirection, limit, startAfter, QueryDocumentSnapshot
+  Timestamp, doc, updateDoc, deleteDoc, serverTimestamp, 
+  OrderByDirection, QueryDocumentSnapshot
 } from 'firebase/firestore';
 import { PostWithId } from '@/types/post';
 import { formatJpDateFromTimestamp } from '@/lib/format';

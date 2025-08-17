@@ -21,7 +21,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { postData, postId, action } = await request.json();
+    const { postData, postId } = await request.json();
     
     if (!postData) {
       return NextResponse.json({ error: 'Post data is required' }, { status: 400 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { GithubLogoIcon } from '@phosphor-icons/react';
 import { getAuth, signInWithEmailAndPassword, GithubAuthProvider, signInWithPopup, AuthError, UserCredential } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
@@ -39,7 +39,7 @@ export default function LoginForm() {
       }
 
       return { success: true, data: { user: userCredential.user, isAdmin } }
-    } catch (error) {
+    } catch {
       return { success: false, error: '認証処理に失敗しました' }
     }
   }

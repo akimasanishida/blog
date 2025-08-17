@@ -8,15 +8,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowsClockwiseIcon, WarningCircleIcon } from '@phosphor-icons/react';
 import Image from "next/image";
 import withAdminAuth from '@/components/withAdminAuth';
-import { db, storage } from '@/lib/firebase';
+import { storage } from '@/lib/firebase';
 import {
-  doc, getDoc, addDoc, updateDoc, collection, serverTimestamp, Timestamp, query, where, getDocs
-} from 'firebase/firestore';
-import {
-  ref, uploadBytesResumable, getDownloadURL, listAll
+  ref, uploadBytesResumable
 } from 'firebase/storage';
 import ImageDetailOverlay, { ImageInfo as OverlayImageInfo } from '@/components/ImageDetailOverlay'; // Import the new component
-import { Post, PostWithId } from '@/types/post';
+import { Post, PostWithId, PostWithStringDate } from '@/types/post';
 import { ImageInfo } from '@/types/image';
 
 
@@ -306,7 +303,7 @@ function AdminPostPage() {
         currentPostData.slug !== initialPost.slug ||
         currentPostData.category !== initialPost.category;
 
-      const finalDataToSave: any = {
+      const finalDataToSave: PostWithStringDate = {
         title: currentPostData.title,
         content: currentPostData.content,
         slug: currentPostData.slug,
