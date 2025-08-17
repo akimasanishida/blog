@@ -1,8 +1,10 @@
 import fs from "fs";
+import path from "path";
 import toml from "toml";
 import deepmerge from "deepmerge";
 
-const configText = fs.readFileSync("config.toml", "utf-8");
+const configPath = path.join(process.cwd(), "config.toml");
+const configText = fs.readFileSync(configPath, "utf-8");
 const appConfigInput = toml.parse(configText);
 
 // appConfig に未定義のプロパティがある場合のデフォルト値を設定
