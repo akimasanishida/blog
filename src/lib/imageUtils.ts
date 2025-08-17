@@ -40,6 +40,8 @@ export function convertMarkdownImageUrls(content: string): string {
   // Markdown の画像記法 ![alt](url) を検索して変換
   return content.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, url) => {
     const convertedUrl = convertToMediaRoute(url);
-    return `![${alt}](${convertedUrl})`;
+    // URLに白いスペースや特殊文字が含まれている場合は適切にエンコード
+    const encodedUrl = encodeURI(convertedUrl);
+    return `![${alt}](${encodedUrl})`;
   });
 }

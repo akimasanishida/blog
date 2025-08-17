@@ -1,5 +1,6 @@
 import admin from 'firebase-admin'
 import { getAuth } from 'firebase-admin/auth'
+import { getFirestore } from 'firebase-admin/firestore'
 import 'server-only'
 
 // Firebase Adminの設定
@@ -17,4 +18,6 @@ const app = !admin.apps.length
   : admin.app()
 
 const adminAuth = getAuth(app)
-export { adminAuth }
+const adminDb = getFirestore(app)
+
+export { adminAuth, adminDb }

@@ -25,7 +25,7 @@ FIREBASE_PROJECT_ID=...
 FIREBASE_PRIVATE_KEY=...
 FIREBASE_CLIENT_EMAIL=...
 FIREBASE_STORAGE_BUCKET=...
-SITE_VISIBILITY=...  # public: 全体公開, private: ログインユーザのみに公開
+NEXT_PUBLIC_SITE_VISIBILITY=...  # public: 全体公開, private: ログインユーザのみに公開
 ```
 
 **Firestore Database のルール（仮設定）**
@@ -35,23 +35,31 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
     match /posts/{postId} {
       allow read;
-      allow write: if false;
+      allow write: if isAdmin();
     }
   }
 }
 ```
 
-**Storage のルール（仮設定）**
+**Storage のルール**
 
 ```
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
     match /{allPaths=**} {
-      allow read;
-      allow write: if false;
+      allow read: if false;
+      allow write: if isAdmin();
     }
   }
 }
@@ -89,7 +97,7 @@ service cloud.firestore {
     }
 
     match /posts/{postId} {
-      allow read: if true;
+      allow read: if false;
       allow write: if isAdmin();
     }
   }

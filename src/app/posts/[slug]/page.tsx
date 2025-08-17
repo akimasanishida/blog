@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getPostBySlug } from "@/lib/firebase";
+import { getPostBySlug } from "@/lib/firebaseServer";
 import type { Post } from "@/types/post";
 import { renderMarkdownToHTML } from "@/lib/markdown";
 import "katex/dist/katex.min.css";

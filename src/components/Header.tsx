@@ -42,11 +42,24 @@ const Header = () => {
     setMenuOpen(false);
   };
   const handleLogout = async () => {
-    await auth.signOut();
-    await deleteSessionCookie();
-    router.push('/login');
     setMenuOpen(false);
+    
+    try {
+      // まずセッションクッキーを削除
+      await deleteSessionCookie();
+      
+      // Firebase からサインアウト
+      await auth.signOut();
+      
+      // ページをリロードして確実にクリーンな状態にする
+      window.location.href = process.env.NEXT_PUBLIC_SITE_VISIBILITY === 'private' ? '/login' : '/';
+    } catch (error) {
+      console.error('Logout error:', error);
+      // エラーが発生してもページをリロード
+      window.location.href = '/';
+    }
   };
+  
   const config = useAppConfig();
 
   const menu = (

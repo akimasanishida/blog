@@ -6,13 +6,12 @@ import {
     getDocs, 
     query, 
     orderBy, 
-    where,
     Timestamp,
     Firestore
 } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth'; // Added for Firebase Auth
 import { getStorage, FirebaseStorage } from 'firebase/storage'; // Added for Firebase Storage
-import type { Post, PostWithId } from '../types/post'; // Adjust path as needed after moving types
+import type { PostWithId } from '../types/post'; // Adjust path as needed after moving types
 
 // Confirmed Firebase project configuration
 const firebaseConfig = {
@@ -36,42 +35,6 @@ const auth: Auth = getAuth(app); // Added for Firebase Auth
 const storage: FirebaseStorage = getStorage(app); // Added for Firebase Storage
 
 export { app, db, auth, storage }; // Export storage
-
-/**
- * Fetches all posts with their full content from Firestore.
- * Returns a promise resolving to an array of Post objects,
- * sorted by publishDate in descending order.
- */
-export const getAllPosts = async (): Promise<Post[]> => {
-  try {
-    const postsCollection = collection(db, "posts");
-    // 追加: isPublic が true のみ取得
-    const q = query(
-      postsCollection,
-      where("isPublic", "==", true),
-      orderBy("publishDate", "desc")
-    );
-    const querySnapshot = await getDocs(q);
-
-    const posts: Post[] = querySnapshot.docs.map(docSnap => {
-      const data = docSnap.data();
-      return {
-        slug: data.slug,
-        title: data.title || "untitled",
-        isPublic: data.isPublic,
-        publishDate: data.publishDate as Timestamp || undefined,
-        updateDate: data.updateDate as Timestamp || undefined,
-        category: data.category || "uncategorized",
-        content: data.content || "",
-        tags: data.tags || [],
-      };
-    });
-    
-    return posts;
-  } catch {
-    return [];
-  }
-};
 
 export const getAllPostsForAdmin = async (): Promise<PostWithId[]> => {
   try {
@@ -100,42 +63,5 @@ export const getAllPostsForAdmin = async (): Promise<PostWithId[]> => {
     return posts;
   } catch {
     return [];
-  }
-};
-
-/**
- * Fetches a single post by its slug (document ID) from Firestore.
- * Returns a promise resolving to a Post object or null if not found.
- */
-export const getPostBySlug = async (slug: string): Promise<Post | null> => {
-  try {
-    const postsCollection = collection(db, "posts");
-    // 追加: isPublic が true のみ取得
-    const q = query(
-      postsCollection,
-      where("slug", "==", slug),
-      where("isPublic", "==", true)
-    );
-    const querySnapshot = await getDocs(q);
-
-    if (!querySnapshot.empty) {
-      const docSnap = querySnapshot.docs[0];
-      const data = docSnap.data();
-      const post: Post = {
-        slug: data.slug,
-        title: data.title || "untitled",
-        isPublic: data.isPublic,
-        publishDate: data.publishDate as Timestamp || undefined,
-        updateDate: data.updateDate as Timestamp || undefined,
-        category: data.category || "uncategorized",
-        content: data.content || "",
-        tags: data.tags || [],
-      };
-      return post;
-    } else {
-      return null;
-    }
-  } catch {
-    return null;
   }
 };

@@ -1,6 +1,6 @@
 import PostList from '@/components/PostList';
 import PaginationControls from '@/components/PaginationControls';
-import { getAllPosts } from '@/lib/firebase';
+import { getAllPosts } from '@/lib/firebaseServer';
 import { paginatePost, NUM_PAGINATION } from '@/lib/pagination';
 import type { Post } from '@/types/post';
 import { notFound } from 'next/navigation';
@@ -56,9 +56,11 @@ const MonthlyArchivePage = async ({
 
   const allPosts: Post[] = await getAllPosts();
   const postsForMonth = allPosts.filter(post => {
-    const postDate = post.publishDate?.toDate();
+    if (!post.publishDate) return false;
+    // Handle Timestamp objects from server-side data
+    const postDate = post.publishDate.toDate ? post.publishDate.toDate() : new Date(post.publishDate as unknown as string);
     // JavaScript Date months are 0-indexed (0 for Jan, 11 for Dec)
-    return postDate?.getUTCFullYear() === yearNum && (postDate.getUTCMonth() + 1) === monthNum;
+    return postDate.getUTCFullYear() === yearNum && (postDate.getUTCMonth() + 1) === monthNum;
   });
 
   const totalPosts = postsForMonth.length;

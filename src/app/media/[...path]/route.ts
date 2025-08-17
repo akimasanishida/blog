@@ -8,7 +8,7 @@ import appConfig from "@/lib/appConfig";
 export const runtime = "nodejs"; // Admin SDK 利用のため Edge ではなく Node
 export const dynamic = "force-dynamic"; // 認証有無で応答が変わるため
 
-const LOGIN_REQUIRED = process.env.SITE_VISIBILITY === "private";
+const LOGIN_REQUIRED = process.env.NEXT_PUBLIC_SITE_VISIBILITY === "private";
 
 async function verifyAdminAuth(req: NextRequest) {
   if (!LOGIN_REQUIRED) return true; // 公開モードならスキップ
@@ -55,7 +55,9 @@ export async function GET(
   const resolvedParams = await params;
   
   // URL: /media/images/posts/hoge.jpg -> ストレージ上の "images/posts/hoge.jpg" を読む想定
-  const objectPath = resolvedParams.path.join("/");
+  // 白いスペースや特殊文字を含むパスを適切にデコード
+  const decodedPathSegments = resolvedParams.path.map(segment => decodeURIComponent(segment));
+  const objectPath = decodedPathSegments.join("/");
 
   // ストレージバケット名を明示的に指定
   const bucket = admin.storage().bucket(process.env.FIREBASE_STORAGE_BUCKET);
@@ -88,7 +90,7 @@ export async function GET(
     // 本体取得（必要に応じて createReadStream に置き換え可能）
     const [buffer] = await file.download();
 
-    return new Response(buffer, {
+    return new Response(buffer as unknown as BodyInit, {
       status: 200,
       headers: {
         "Content-Type": contentType,

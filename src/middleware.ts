@@ -7,7 +7,7 @@ export async function middleware(request: NextRequest) {
   const isPrivatePage = !isPublicPage
   const isLoggedIn = session
   // Edge Runtime では fs モジュールが使用できないため、環境変数を使用
-  const isPublicSite = process.env.SITE_VISIBILITY === 'public'
+  const isPublicSite = process.env.NEXT_PUBLIC_SITE_VISIBILITY === 'public'
 
   // 公開サイトの場合、認証チェックをスキップ
   if (isPublicSite) {

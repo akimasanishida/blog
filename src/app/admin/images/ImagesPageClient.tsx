@@ -29,14 +29,11 @@ function AdminImagesPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const imagesListRef = ref(storage, STORAGE_IMAGE_PATH);
-      const res = await listAll(imagesListRef);
-      const fetchedImageInfo: ImageInfo[] = res.items.map((itemRef) => {
-        // 新しいメディアルートを使用: /media/images/posts/filename.jpg
-        const url = `/media/${itemRef.fullPath}`;
-        return { url, name: itemRef.name, refPath: itemRef.fullPath };
-      });
-      fetchedImageInfo.sort((a, b) => a.name.localeCompare(b.name));
+      const response = await fetch('/api/admin/images');
+      if (!response.ok) {
+        throw new Error('Failed to fetch images');
+      }
+      const fetchedImageInfo: ImageInfo[] = await response.json();
       setImages(fetchedImageInfo);
     } catch (err) {
       console.error("Error fetching images:", err);

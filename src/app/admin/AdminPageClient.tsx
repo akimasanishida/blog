@@ -20,7 +20,7 @@ import {
 } from 'firebase/firestore';
 import { PostWithId } from '@/types/post';
 import { formatJpDateFromTimestamp } from '@/lib/format';
-import { getAllPostsForAdmin } from '@/lib/firebase';
+// Remove the import since we'll use API route
 
 function sortPosts(
   postsToSort: PostWithId[],
@@ -56,111 +56,73 @@ function AdminPage() {
   const [queryLastDoc, setQueryLastDoc] = useState<QueryDocumentSnapshot | null>(null);
   const [isNextPageAvailable, setIsNextPageAvailable] = useState(true);
 
-  // Refactored fetchPosts
+  // Simplified fetchPosts using only API route
   const fetchPosts = useCallback(async (
     fetchOptions: {
       sortField: string;
       sortDirection: OrderByDirection;
       pageAction: "first" | "next" | "prev";
       currentQueryLastDoc: QueryDocumentSnapshot | null;
-      currentPage: number; // Current page number *being fetched*
-      currentPageDocCursors: (QueryDocumentSnapshot | null)[]; // Cursors array *at the time of call*
+      currentPage: number;
+      currentPageDocCursors: (QueryDocumentSnapshot | null)[];
     }
   ) => {
     const { 
       sortField: currentSortField, 
-      sortDirection: currentSortDirection, 
-      pageAction,
-      currentQueryLastDoc, // Use this instead of state queryLastDoc directly for 'next'
-      currentPage: pageToFetch,    // Use this instead of state currentPage directly for 'prev' logic
-      currentPageDocCursors      // Use this for 'prev' logic
+      sortDirection: currentSortDirection
     } = fetchOptions;
 
     setLoading(true);
     setError(null);
     try {
-      const postsCollectionRef = collection(db, "posts");
-      let baseQuery;
-
-      if (currentSortField === "publishDate" && currentSortDirection === "desc") {
-        // Sort by isPublic (false then true), then by publishDate descending.
-        // This brings unpublished (isPublic: false) posts to the top when sorting by publishDate desc.
-        baseQuery = query(postsCollectionRef, orderBy("isPublic", "asc"), orderBy(currentSortField, currentSortDirection));
-      } else {
-        // Standard sorting for all other cases
-        baseQuery = query(postsCollectionRef, orderBy(currentSortField, currentSortDirection));
+      // Fetch posts from API route instead of direct Firestore access
+      const response = await fetch('/api/admin/posts');
+      if (!response.ok) {
+        throw new Error('Failed to fetch posts');
       }
-
-      let q; // Query variable to be used for pagination
-
-      if (pageAction === "first") {
-        // setCurrentPage(1) and setPageDocCursors([null]) are handled by the caller (main useEffect)
-        q = query(baseQuery, limit(itemsPerPage));
-      } else if (pageAction === "next" && currentQueryLastDoc) {
-        q = query(baseQuery, startAfter(currentQueryLastDoc), limit(itemsPerPage));
-      } else if (pageAction === "prev" && pageToFetch > 0) { // pageToFetch is 1-indexed
-        const prevPageCursorTarget = currentPageDocCursors[pageToFetch - 1]; // Cursor for the page *before* the one we want to fetch
-        if (prevPageCursorTarget) { // if pageToFetch is 1, prevPageCursorTarget is pageDocCursors[0] which is null
-          q = query(baseQuery, startAfter(prevPageCursorTarget), limit(itemsPerPage));
-        } else { // Fetching the actual first page (pageToFetch = 1)
-          q = query(baseQuery, limit(itemsPerPage));
-        }
-      } else { // Fallback or unexpected pageAction
-        console.warn("fetchPosts called with invalid pageAction or parameters, fetching first page.", fetchOptions);
-        q = query(baseQuery, limit(itemsPerPage));
-      }
-
-      const querySnapshot = await getDocs(q);
-      const fetchedPosts: PostWithId[] = await getAllPostsForAdmin();
+      const fetchedPosts: PostWithId[] = await response.json();
+      
+      // Store original posts data for display
+      const originalPosts = [...fetchedPosts];
+      
+      // Convert string dates back to Timestamp-like objects for sorting
+      const postsWithTimestamps = fetchedPosts.map(post => ({
+        ...post,
+        publishDate: post.publishDate ? { 
+          toMillis: () => new Date(post.publishDate as unknown as string).getTime()
+        } : null,
+        updateDate: post.updateDate ? { 
+          toMillis: () => new Date(post.updateDate as unknown as string).getTime()
+        } : null,
+      }));
+      
       const sortedPosts = sortPosts(
-        fetchedPosts,
+        postsWithTimestamps as PostWithId[],
         currentSortField as 'publishDate' | 'updateDate',
         currentSortDirection,
       );
-      setPosts(sortedPosts);
-      const newLastDoc = querySnapshot.docs[querySnapshot.docs.length - 1] || null;
-      setQueryLastDoc(newLastDoc);
-
-      if (pageAction === "first") {
-        setPageDocCursors(newLastDoc ? [null, newLastDoc] : [null]);
-      } else if (pageAction === "next" && newLastDoc) {
-        // pageToFetch is the page number that was just fetched (e.g., if currentPage was 1, pageToFetch is 2)
-        // We need to store the cursor for this newly fetched page (pageToFetch)
-        // The cursor newLastDoc is the last document of pageToFetch.
-        // pageDocCursors should be 0-indexed for page numbers, so pageDocCursors[0] is for page 1 (null), pageDocCursors[1] is last doc of page 1.
-        // So, for page `p`, its last doc is at `pageDocCursors[p]`.
-        setPageDocCursors(prev => {
-            const newCursors = [...prev];
-            if (pageToFetch < newCursors.length) {
-                newCursors[pageToFetch] = newLastDoc;
-            } else { // pageToFetch is beyond current known cursors
-                // Fill any gaps if necessary, though ideally this shouldn't happen with linear next
-                while(newCursors.length < pageToFetch) {
-                    newCursors.push(null); // Should ideally not happen
-                }
-                newCursors.push(newLastDoc);
-            }
-            return newCursors;
-        });
-      }
-      // For 'prev', pageDocCursors should already be populated for the target page.
-      // We don't typically update pageDocCursors when navigating 'prev', as we are navigating to already known cursor states.
-
-      // Check if a next page is available from the current (pageToFetch)
-      if (newLastDoc && querySnapshot.docs.length === itemsPerPage) {
-        const nextCheckQuery = query(baseQuery, startAfter(newLastDoc), limit(1));
-        const nextCheckSnapshot = await getDocs(nextCheckQuery);
-        setIsNextPageAvailable(!nextCheckSnapshot.empty);
-      } else {
-        setIsNextPageAvailable(false);
-      }
+      
+      // For simplicity, we'll implement client-side pagination
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedPosts = sortedPosts.slice(startIndex, endIndex);
+      
+      // Map back to original data for display while keeping sort order
+      const displayPosts = paginatedPosts.map(sortedPost => {
+        const originalPost = originalPosts.find(p => p.id === sortedPost.id);
+        return originalPost || sortedPost;
+      });
+      
+      setPosts(displayPosts);
+      setIsNextPageAvailable(endIndex < sortedPosts.length);
+      
     } catch (err) {
       console.error("Error fetching posts:", err);
       setError("Failed to load posts. Please try again.");
     } finally {
       setLoading(false);
     }
-  }, [itemsPerPage]);
+  }, [itemsPerPage, currentPage]);
 
   useEffect(() => {
     // Reset pagination state before fetching on sort change
