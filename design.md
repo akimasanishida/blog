@@ -190,20 +190,118 @@ app/
 
 ### ライブラリ（`lib`）
 
-- firebase.ts: Firebase を用いたデータの取得・送信
-  - `getAllPosts`: すべての公開中の投稿を取得する
-  - `getAllPostsForAdmin`: 下書きを含むすべての投稿を取得する
+- firebase.ts: Firebase クライアント側の初期化とストレージ操作
+  - 主に管理画面での画像アップロード・削除に使用
+  - 直接的なデータ取得は行わない（セキュリティルールにより制限）
+- firebaseServer.ts: Firebase Admin SDK を使用したサーバー側データ操作
+  - `getAllPosts`: すべての公開中の投稿を取得する（サーバー側のみ）
+  - `getAllPostsForAdmin`: 下書きを含むすべての投稿を取得する（管理者用）
   - `getPostBySlug`: slug を用いて公開中の投稿とその中身を取得する
+  - サイト公開範囲（`NEXT_PUBLIC_SITE_VISIBILITY`）に基づくアクセス制御を実装
 - firebaseAdmin.ts: Firebase の Admin 操作を行うための権限を取得
 - format.ts: 日付時刻のフォーマット
   - `formatJpDateFromDate`: `Date` をフォーマット済み日付時刻文字列へ変換
   - `formatJpDateFromString`: `string` をフォーマット済み日付時刻文字列へ変換
-  - `formatJpDateFromTimestamp`: Firebase の `Timestamp` をフォーマット済み日付時刻文字列へ変換
+  - `formatJpDateFromTimestamp`: Firebase の `Timestamp` および ISO 文字列をフォーマット済み日付時刻文字列へ変換
 - markdown.ts: マークダウンのレンダリング
   - `renderMarkdownToHTML`: Markdown を HTML へレンダリング
 - pagination.ts: ページネーションのための機能
   - `paginationPosts`: 投稿一覧より、指定されたページのみの投稿一覧を返す
 - utils.ts: 外部ライブラリにより作成されたと思われる
+
+### API ルート（`app/api`）
+
+セキュリティ強化により、クライアント側からの直接的なFirestoreアクセスを制限し、API経由でのデータアクセスを実装。
+
+**公開API**
+- `/api/posts`: 公開中の投稿一覧を取得（サイト公開範囲に基づくアクセス制御あり）
+
+**管理者専用API**
+- `/api/admin/posts`: 下書きを含むすべての投稿一覧を取得
+- `/api/admin/posts/[id]`: 指定IDの投稿詳細を取得
+- `/api/admin/posts/check-slug`: スラッグの重複チェック
+- `/api/admin/posts/save`: 投稿の作成・更新
+- `/api/admin/images`: アップロード済み画像一覧を取得
+
+### セキュリティアーキテクチャ
+
+**Firestore セキュリティルール**
+- 直接的なクライアントアクセスを禁止（`allow read: if false`）
+- 管理者のみ書き込み可能（`allow write: if isAdmin()`）
+- すべてのデータアクセスはサーバー側のAdmin SDKを経由
+
+**アクセス制御**
+- 環境変数 `NEXT_PUBLIC_SITE_VISIBILITY` による公開範囲制御
+  - `public`: 全員がアクセス可能
+  - `private`: ログイン済みユーザーのみアクセス可能
+- サーバーコンポーネントでは `firebaseServer.ts` の関数を直接使用
+- クライアントコンポーネントでは API ルート経由でアクセス
+
+**画像アクセス制御**
+- `/media/[...path]` ルートでFirebase Storageの画像を配信
+- サイト公開範囲に基づくアクセス制御を実装
+- 管理者は常にアクセス可能
+
+### 管理機能の実装詳細
+
+**API ベースアーキテクチャ**
+- 管理画面のすべての操作はAPI経由で実行
+- クライアントコンポーネントから直接Firestoreにアクセスしない
+- セッション認証により管理者権限を確認
+
+**投稿管理（AdminPageClient.tsx）**
+- `/api/admin/posts` から投稿一覧を取得
+- 投稿の削除、公開状態の変更をAPI経由で実行
+- リアルタイムでの状態更新とエラーハンドリング
+
+**投稿編集（PostPageClient.tsx）**
+- `/api/admin/posts/[id]` から既存投稿を取得
+- `/api/admin/posts/check-slug` でスラッグの重複チェック
+- `/api/admin/posts/save` で投稿の作成・更新
+- 画像アップロードは直接Firebase Storageに実行（認証済み）
+
+**画像管理（ImagesPageClient.tsx）**
+- `/api/admin/images` からアップロード済み画像一覧を取得
+- 画像の削除は直接Firebase Storageに実行（認証済み）
+- ディレクトリを除外し、実際のファイルのみを表示
+
+**プレビュー機能（PostPreviewPageClient.tsx）**
+- 保存されていない編集中の内容をプレビュー表示
+- URLパラメータ経由でデータを受け渡し
+- マークダウンレンダリングをリアルタイムで実行
+
+### 環境設定
+
+**必要な環境変数**
+- `NEXT_PUBLIC_SITE_VISIBILITY`: サイトの公開範囲（`public` または `private`）
+  - `public`: 全員がアクセス可能
+  - `private`: ログイン済みユーザーのみアクセス可能
+  - `NEXT_PUBLIC_` プレフィックスによりクライアント側でも参照可能
+- Firebase関連の環境変数（Admin SDK用とクライアント用）
+- セッション管理用の秘密鍵
+
+**Firestore セキュリティルール**
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+    
+    match /{document=**} {
+      allow read: if false;  // クライアント側からの直接読み取りを禁止
+      allow write: if isAdmin();  // 管理者のみ書き込み可能
+    }
+  }
+}
+```
+
+**デプロイメント考慮事項**
+- サーバー側とクライアント側のFirebase設定を適切に分離
+- API ルートでの認証チェックを確実に実装
+- 画像配信ルートでのアクセス制御を適切に設定
+- 環境変数の適切な設定（特に `NEXT_PUBLIC_` プレフィックス）
 
 ### 型（`types`）
 

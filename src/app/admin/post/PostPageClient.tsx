@@ -8,15 +8,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowsClockwiseIcon, WarningCircleIcon } from '@phosphor-icons/react';
 import Image from "next/image";
 import withAdminAuth from '@/components/withAdminAuth';
-import { db, storage } from '@/lib/firebase';
+import { storage } from '@/lib/firebase';
 import {
-  doc, getDoc, addDoc, updateDoc, collection, serverTimestamp, Timestamp, query, where, getDocs
-} from 'firebase/firestore';
-import {
-  ref, uploadBytesResumable, getDownloadURL, listAll
+  ref, uploadBytesResumable
 } from 'firebase/storage';
 import ImageDetailOverlay, { ImageInfo as OverlayImageInfo } from '@/components/ImageDetailOverlay'; // Import the new component
-import { Post, PostWithId } from '@/types/post';
+import { Post, PostWithId, PostWithStringDate } from '@/types/post';
 import { ImageInfo } from '@/types/image';
 
 
@@ -57,18 +54,28 @@ function AdminPostPage() {
       setIsLoading(true);
       const fetchPost = async () => {
         try {
-          const postRef = doc(db, "posts", postId);
-          const docSnap = await getDoc(postRef);
-          if (docSnap.exists()) {
-            const data = docSnap.data() as Post;
-            const fullPostData = { ...initialPostState, ...data, id: docSnap.id };
-            setPost(fullPostData);
-            setInitialPost(fullPostData); // Store initial data
-          } else {
-            setError("Post not found.");
+          const response = await fetch(`/api/admin/posts/${postId}`);
+          if (!response.ok) {
+            if (response.status === 404) {
+              setError("Post not found.");
+            } else {
+              setError("Failed to load post data.");
+            }
             setPost(initialPostState);
             setInitialPost(initialPostState);
+            return;
           }
+          
+          const data = await response.json();
+          // Convert ISO string dates back to Timestamp-like objects
+          const fullPostData = {
+            ...initialPostState,
+            ...data,
+            publishDate: data.publishDate ? { toDate: () => new Date(data.publishDate), toMillis: () => new Date(data.publishDate).getTime() } : null,
+            updateDate: data.updateDate ? { toDate: () => new Date(data.updateDate), toMillis: () => new Date(data.updateDate).getTime() } : null,
+          };
+          setPost(fullPostData);
+          setInitialPost(fullPostData); // Store initial data
         } catch (err) {
           console.error("Error fetching post:", err);
           setError("Failed to load post data.");
@@ -109,15 +116,11 @@ function AdminPostPage() {
     setIsLoadingImages(true);
     setImageError(null);
     try {
-      const imagesListRef = ref(storage, STORAGE_IMAGE_PATH);
-      const res = await listAll(imagesListRef);
-      const fetchedImageInfo: ImageInfo[] = await Promise.all(
-        res.items.map(async (itemRef) => {
-          const url = await getDownloadURL(itemRef);
-          return { url, name: itemRef.name, refPath: itemRef.fullPath };
-        })
-      );
-      fetchedImageInfo.sort((a, b) => a.name.localeCompare(b.name));
+      const response = await fetch('/api/admin/images');
+      if (!response.ok) {
+        throw new Error('Failed to fetch images');
+      }
+      const fetchedImageInfo: ImageInfo[] = await response.json();
       setImages(fetchedImageInfo);
     } catch (err) {
       console.error("Error fetching images:", err);
@@ -225,13 +228,14 @@ function AdminPostPage() {
       },
       async () => {
         try {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          const newImage: ImageInfo = { url: downloadURL, name: fileName, refPath: uploadTask.snapshot.ref.fullPath };
+          // 新しいメディアルートを使用
+          const url = `/media/${uploadTask.snapshot.ref.fullPath}`;
+          const newImage: ImageInfo = { url, name: fileName, refPath: uploadTask.snapshot.ref.fullPath };
           setImages(prevImages => [...prevImages, newImage].sort((a, b) => a.name.localeCompare(b.name)));
           setSelectedImageForOverlay(newImage); // Show overlay instead of direct insert
         } catch (err) {
-          console.error("Error getting download URL or updating image list:", err);
-          setImageError("Upload succeeded but failed to update image list or get URL.");
+          console.error("Error updating image list:", err);
+          setImageError("Upload succeeded but failed to update image list.");
         } finally {
           setIsUploading(false);
           setUploadProgress(0);
@@ -271,21 +275,21 @@ function AdminPostPage() {
 
     setIsSaving(true);
     try {
-      const postsCollection = collection(db, "posts");
-      const slugQuery = query(postsCollection, where("slug", "==", currentPostData.slug));
-      const querySnapshot = await getDocs(slugQuery);
-      let slugExists = false;
-      if (!querySnapshot.empty) {
-        if (isEditing && postId) {
-          querySnapshot.forEach(docSnap => {
-            if (docSnap.id !== postId) {
-              slugExists = true;
-            }
-          });
-        } else {
-          slugExists = true;
-        }
+      // Check if slug exists using API
+      const slugCheckResponse = await fetch('/api/admin/posts/check-slug', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          slug: currentPostData.slug, 
+          excludePostId: isEditing && postId ? postId : undefined 
+        }),
+      });
+
+      if (!slugCheckResponse.ok) {
+        throw new Error('Failed to check slug');
       }
+
+      const { exists: slugExists } = await slugCheckResponse.json();
 
       if (slugExists) {
         setError(`このURL "${currentPostData.slug}" は既に存在します。別のURLを選択してください。 (Slug "${currentPostData.slug}" already exists. Please choose another.)`);
@@ -296,10 +300,10 @@ function AdminPostPage() {
       const hasContentChanged =
         currentPostData.title !== initialPost.title ||
         currentPostData.content !== initialPost.content ||
-        currentPostData.slug !== initialPost.slug || // Slug is part of content change check
+        currentPostData.slug !== initialPost.slug ||
         currentPostData.category !== initialPost.category;
 
-      const finalDataToSave: Post = {
+      const finalDataToSave: PostWithStringDate = {
         title: currentPostData.title,
         content: currentPostData.content,
         slug: currentPostData.slug,
@@ -318,86 +322,75 @@ function AdminPostPage() {
       // Determine publishDate
       if (action === 'publish') {
         if (!isEditing) { // New post published
-          finalDataToSave.publishDate = serverTimestamp() as Timestamp;
+          finalDataToSave.publishDate = 'serverTimestamp';
         } else { // Existing draft published
-          finalDataToSave.publishDate = initialPost.publishDate || serverTimestamp() as Timestamp;
+          finalDataToSave.publishDate = initialPost.publishDate ? 
+            (typeof initialPost.publishDate === 'string' ? initialPost.publishDate : new Date(initialPost.publishDate.toDate()).toISOString()) : 
+            'serverTimestamp';
         }
       } else if (action === 'update') { // Existing public post
-        finalDataToSave.publishDate = initialPost.publishDate; // Must exist, keep current
+        finalDataToSave.publishDate = initialPost.publishDate ? 
+          (typeof initialPost.publishDate === 'string' ? initialPost.publishDate : new Date(initialPost.publishDate.toDate()).toISOString()) : 
+          null;
       } else { // saveDraft
         if (!isEditing) { // New draft
           finalDataToSave.publishDate = null;
         } else { // Existing post saved as draft
-          finalDataToSave.publishDate = initialPost.publishDate || null; // Preserve if existed, else null
+          finalDataToSave.publishDate = initialPost.publishDate ? 
+            (typeof initialPost.publishDate === 'string' ? initialPost.publishDate : new Date(initialPost.publishDate.toDate()).toISOString()) : 
+            null;
         }
       }
 
       // Determine updateDate
       if (hasContentChanged) {
-        finalDataToSave.updateDate = serverTimestamp() as Timestamp;
+        finalDataToSave.updateDate = 'serverTimestamp';
       } else {
-        if (!isEditing) { // New post (publish or draft), content hasn't "changed" from initial empty state yet
+        if (!isEditing) { // New post
           finalDataToSave.updateDate = null;
         } else { // Existing post, no content change
-          finalDataToSave.updateDate = initialPost.updateDate || null; // Keep old updateDate
+          finalDataToSave.updateDate = initialPost.updateDate ? 
+            (typeof initialPost.updateDate === 'string' ? initialPost.updateDate : new Date(initialPost.updateDate.toDate()).toISOString()) : 
+            null;
         }
       }
 
-      // Override: For brand new posts (first save, publish or draft), updateDate is always null.
-      // This takes precedence over hasContentChanged for the initial save.
+      // Override: For brand new posts, updateDate is always null
       if (!isEditing) {
         finalDataToSave.updateDate = null;
       }
 
-      let newPostRefId: string | null = null;
+      // Save post using API
+      const saveResponse = await fetch('/api/admin/posts/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postData: finalDataToSave,
+          postId: isEditing && postId ? postId : undefined,
+          action
+        }),
+      });
 
-      if (isEditing && postId) {
-        const postRef = doc(db, "posts", postId);
-        // Firestore's updateDoc only updates fields provided.
-        // If finalDataToSave.updateDate is null, it will set it to null.
-        // If a field is undefined in finalDataToSave, it will be ignored by updateDoc.
-        // Ensure all paths correctly set fields to null instead of undefined if they should be cleared.
-        await updateDoc(postRef, { ...finalDataToSave });
-      } else { // New post
-        // AddDoc will create fields. If a field is null, it's stored as null.
-        // If undefined, Firestore might store it as null or ignore, better to be explicit with null.
-        const newPostRef = await addDoc(collection(db, "posts"), finalDataToSave);
-        newPostRefId = newPostRef.id;
+      if (!saveResponse.ok) {
+        throw new Error('Failed to save post');
       }
 
-      const currentSavedId = (isEditing && postId) ? postId : newPostRefId!;
+      const savedPost = await saveResponse.json();
+
+      // Convert ISO string dates back to Timestamp-like objects for UI consistency
       const synchronizedPostState: PostWithId = {
-        id: currentSavedId,
-        title: finalDataToSave.title,
-        content: finalDataToSave.content,
-        slug: finalDataToSave.slug,
-        category: finalDataToSave.category,
-        isPublic: finalDataToSave.isPublic,
-        publishDate: finalDataToSave.publishDate, // This could be Timestamp, serverTimestamp, or null
-        updateDate: finalDataToSave.updateDate,   // This could be Timestamp, serverTimestamp, or null
-        tags: finalDataToSave.tags || [],
+        ...savedPost,
+        publishDate: savedPost.publishDate ? { toDate: () => new Date(savedPost.publishDate), toMillis: () => new Date(savedPost.publishDate).getTime() } : null,
+        updateDate: savedPost.updateDate ? { toDate: () => new Date(savedPost.updateDate), toMillis: () => new Date(savedPost.updateDate).getTime() } : null,
       };
 
-      // Replace serverTimestamp() sentinels with client-side Timestamp.now() for immediate UI consistency
-      if (finalDataToSave.publishDate && !(finalDataToSave.publishDate instanceof Timestamp) && finalDataToSave.publishDate !== null) {
-        synchronizedPostState.publishDate = Timestamp.now();
-      } else {
-        synchronizedPostState.publishDate = finalDataToSave.publishDate; // Already a Timestamp or null
-      }
-
-      if (finalDataToSave.updateDate && !(finalDataToSave.updateDate instanceof Timestamp) && finalDataToSave.updateDate !== null) {
-        synchronizedPostState.updateDate = Timestamp.now();
-      } else {
-        synchronizedPostState.updateDate = finalDataToSave.updateDate; // Already a Timestamp or null
-      }
-
       setPost(synchronizedPostState);
-      setInitialPost(synchronizedPostState); // Keep initialPost in sync with the saved state
+      setInitialPost(synchronizedPostState);
 
-      if (!isEditing && newPostRefId) {
+      if (!isEditing) {
         alert("投稿を作成しました！ (Post created successfully!)");
-        router.push(`/admin/post?id=${newPostRefId}`);
-      } else if (isEditing) {
+        router.push(`/admin/post?id=${savedPost.id}`);
+      } else {
         alert("投稿を更新しました！ (Post updated successfully!)");
       }
 

@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { getAllPosts } from '@/lib/firebase'; // Adjust path if necessary
-import type { Post } from '@/types/post'; // Adjust path if necessary
+import type { Post } from '@/types/post';
 import SearchBox from './SearchBox';
+import { useAppConfig } from '@/context/AppConfigContext';
 
 
 const Footer = () => {
@@ -21,15 +21,21 @@ const Footer = () => {
     const fetchAndProcessData = async () => {
       setLoading(true);
       try {
-        const posts: Post[] = await getAllPosts();
+        const response = await fetch('/api/posts');
+        if (!response.ok) {
+          throw new Error('Failed to fetch posts');
+        }
+        const posts: Post[] = await response.json();
         
         // --- Process Archives (existing logic) ---
         const processedArchiveData = new Map<string, Set<string>>();
         posts.forEach(post => {
           if (!post.publishDate) return; // Skip posts without a publish date
-          const date = post.publishDate?.toDate();
-          const year = date?.getUTCFullYear().toString();
-          const month = (date?.getUTCMonth() + 1).toString().padStart(2, '0');
+          // Handle ISO string dates from API
+          const date = new Date(post.publishDate as unknown as string);
+          if (isNaN(date.getTime())) return; // Skip invalid dates
+          const year = date.getUTCFullYear().toString();
+          const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
           if (!processedArchiveData.has(year)) {
             processedArchiveData.set(year, new Set());
           }
@@ -87,6 +93,8 @@ const Footer = () => {
       return newSet;
     });
   };
+
+  const config = useAppConfig();
 
   return (
     <footer className='border-t py-8'>
@@ -161,7 +169,7 @@ const Footer = () => {
         </div>
       </div>
       <div className='text-center text-sm'>
-        © {currentYear} 西田明正 (Akimasa NISHIDA).
+        © {currentYear} {config.site.author}.
       </div>
     </footer>
   );

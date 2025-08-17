@@ -2,22 +2,65 @@
 
 import Link from 'next/link';
 import { ModeToggle } from './ModeToggle';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { ListIcon, XIcon } from '@phosphor-icons/react';
 import { auth } from '@/lib/firebase'; // Firebase Auth インスタンスのパスは適宜修正
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAppConfig } from '@/context/AppConfigContext';
+import { deleteSessionCookie } from '@/app/actions/delete-session-cookie';
 
 const Header = () => {
   const router = useRouter();
+  const pathname = usePathname();
   const [user, loading] = useAuthState(auth);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  const handleLogout = async () => {
-    await auth.signOut();
-    router.push('/admin');
+  useEffect(() => {
+    let isMounted = true;
+    const checkAdmin = async () => {
+      if (user) {
+        try {
+          const tokenResult = await user.getIdTokenResult(true);
+          if (isMounted) setIsAdmin(!!tokenResult.claims.admin);
+        } catch {
+          if (isMounted) setIsAdmin(false);
+        }
+      } else {
+        if (isMounted) setIsAdmin(false);
+      }
+    };
+    checkAdmin();
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  const handleLogin = () => {
+    router.replace(`/login?redirectTo=${pathname}`);
     setMenuOpen(false);
   };
+  const handleLogout = async () => {
+    setMenuOpen(false);
+    
+    try {
+      // まずセッションクッキーを削除
+      await deleteSessionCookie();
+      
+      // Firebase からサインアウト
+      await auth.signOut();
+      
+      // ページをリロードして確実にクリーンな状態にする
+      window.location.href = process.env.NEXT_PUBLIC_SITE_VISIBILITY === 'private' ? '/login' : '/';
+    } catch (error) {
+      console.error('Logout error:', error);
+      // エラーが発生してもページをリロード
+      window.location.href = '/';
+    }
+  };
+  
+  const config = useAppConfig();
 
   const menu = (
     <ul className="list-none flex flex-col md:flex-row m-0 p-0 items-center gap-4 md:gap-0">
@@ -36,7 +79,7 @@ const Header = () => {
       </li>
       <li className="md:mr-4">
         <a
-          href="https://akimasanishida.com"
+          href={config.site.hp_url}
           target="_blank"
           rel="noopener noreferrer"
           className="!text-foreground link-no-underline"
@@ -45,11 +88,13 @@ const Header = () => {
           HP
         </a>
       </li>
-      <li className="md:mr-4">
-        <Link href="/admin" className="!text-muted-foreground link-no-underline" onClick={() => setMenuOpen(false)}>
-          Admin
-        </Link>
-      </li>
+      {isAdmin && (
+        <li className="md:mr-4">
+          <Link href="/admin" className="!text-foreground link-no-underline" onClick={() => setMenuOpen(false)}>
+            Admin
+          </Link>
+        </li>
+      )}
       <li>
         {loading ? null : user ? (
           <button
@@ -58,7 +103,11 @@ const Header = () => {
           >
             Logout
           </button>
-        ) : null}
+        ) : (
+          <button className="!text-foreground link-no-underline" onClick={handleLogin}>
+            Login
+          </button>
+        )}
       </li>
     </ul>
   );
@@ -67,7 +116,7 @@ const Header = () => {
     <header className="fixed top-0 left-0 w-full bg-[var(--background)]/50 backdrop-blur-sm z-50 py-4 px-6 flex justify-between items-center text-sm shadow-sm">
       <div>
         <Link href="/" className="text-xl !text-foreground link-no-underline font-bold">
-          西田明正のブログ
+          {config.site.title}
         </Link>
       </div>
       {/* PC: メニュー表示, モバイル: 非表示 */}

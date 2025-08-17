@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import SearchBox from '@/components/SearchBox';
-import { getAllPosts } from '@/lib/firebase';
+// Remove the import since we'll use API route
 import PostList from '@/components/PostList';
 import Fuse from 'fuse.js';
 import type { Post } from '@/types/post';
@@ -21,7 +21,11 @@ export const SearchResultsPageContent: React.FC = () => {
     const fetchPosts = async () => {
       setLoading(true);
       try {
-        const posts = await getAllPosts();
+        const response = await fetch('/api/posts');
+        if (!response.ok) {
+          throw new Error('Failed to fetch posts');
+        }
+        const posts: Post[] = await response.json();
         setAllPosts(posts);
         setFuseInstance(new Fuse(posts, {
           keys: [
