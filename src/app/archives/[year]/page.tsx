@@ -1,6 +1,6 @@
 import PostList from '@/components/PostList';
 import PaginationControls from '@/components/PaginationControls';
-import { getAllPosts } from '@/lib/firebase';
+import { getAllPosts } from '@/lib/firebaseServer';
 import { paginatePost, NUM_PAGINATION } from '@/lib/pagination';
 import type { Post } from '@/types/post';
 import { notFound } from 'next/navigation';
@@ -54,8 +54,10 @@ const YearlyArchivePage = async ({
 
   const allPosts: Post[] = await getAllPosts();
   const postsForYear = allPosts.filter(post => {
-    const postDate = post.publishDate?.toDate();
-    return postDate?.getUTCFullYear() === yearNum;
+    if (!post.publishDate) return false;
+    // Handle Timestamp objects from server-side data
+    const postDate = post.publishDate.toDate ? post.publishDate.toDate() : new Date(post.publishDate as unknown as string);
+    return postDate.getUTCFullYear() === yearNum;
   });
 
   if (postsForYear.length === 0) {

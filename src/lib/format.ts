@@ -21,7 +21,7 @@ export function formatJpDateFromString(dateString: string | null | undefined) {
   return formatJpDateFromDate(new Date(dateString));
 }
 
-export function formatJpDateFromTimestamp(timestamp: Timestamp | { seconds: number, nanoseconds: number } | null | undefined) {
+export function formatJpDateFromTimestamp(timestamp: Timestamp | { seconds: number, nanoseconds: number } | string | null | undefined) {
   if (!timestamp) {
     return undefined;
   }
@@ -31,6 +31,9 @@ export function formatJpDateFromTimestamp(timestamp: Timestamp | { seconds: numb
   } else if (typeof timestamp === "object" && typeof timestamp.seconds === "number") {
     // Convert plain object to Timestamp
     date = new Date(timestamp.seconds * 1000);
+  } else if (typeof timestamp === "string") {
+    // Handle ISO string dates from API
+    date = new Date(timestamp);
   } else {
     return undefined;
   }

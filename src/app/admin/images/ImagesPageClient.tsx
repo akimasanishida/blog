@@ -8,7 +8,7 @@ import { TrashIcon, CloudArrowUpIcon, ArrowsClockwiseIcon, WarningCircleIcon} fr
 import withAdminAuth from '@/components/withAdminAuth';
 import { storage } from '@/lib/firebase';
 import { 
-  ref, uploadBytesResumable, getDownloadURL, listAll, deleteObject 
+  ref, uploadBytesResumable, deleteObject 
 } from 'firebase/storage';
 import ImageDetailOverlay, { ImageInfo as OverlayImageInfo } from '@/components/ImageDetailOverlay'; // Import the new component
 import { ImageInfo } from '@/types/image';
@@ -29,15 +29,11 @@ function AdminImagesPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const imagesListRef = ref(storage, STORAGE_IMAGE_PATH);
-      const res = await listAll(imagesListRef);
-      const fetchedImageInfo: ImageInfo[] = await Promise.all(
-        res.items.map(async (itemRef) => {
-          const url = await getDownloadURL(itemRef);
-          return { url, name: itemRef.name, refPath: itemRef.fullPath };
-        })
-      );
-      fetchedImageInfo.sort((a, b) => a.name.localeCompare(b.name));
+      const response = await fetch('/api/admin/images');
+      if (!response.ok) {
+        throw new Error('Failed to fetch images');
+      }
+      const fetchedImageInfo: ImageInfo[] = await response.json();
       setImages(fetchedImageInfo);
     } catch (err) {
       console.error("Error fetching images:", err);

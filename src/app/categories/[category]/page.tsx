@@ -1,6 +1,6 @@
 import PostList from '@/components/PostList';
 import PaginationControls from '@/components/PaginationControls';
-import { getAllPosts } from '@/lib/firebase';
+import { getAllPosts } from '@/lib/firebaseServer';
 import { paginatePost, NUM_PAGINATION } from '@/lib/pagination';
 import type { Post } from '@/types/post';
 import { notFound } from 'next/navigation';
