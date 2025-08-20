@@ -12,7 +12,7 @@
 
 `.env.example` をもとに、`.env` ファイルを作成。
 
-**Firestore Database のルール（仮設定）**
+**Firestore Database のルールを仮設定**
 
 ```
 rules_version = '2';
