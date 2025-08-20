@@ -10,56 +10,32 @@
 
 **.env の編集**
 
-```
-NEXT_PUBLIC_APP_URL=https://example.com/your_blog_site_url
-NEXT_PUBLIC_FIREBASE_API_KEY=...
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=....firebaseapp.com
-NEXT_PUBLIC_FIREBASE_DATABASE_URL=https://....firebaseio.com
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=....firebasestorage.app
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
-NEXT_PUBLIC_FIREBASE_APP_ID=...
-SERVICE_ACCOUNT_PATH=./serviceAccountKey.json
-FIREBASE_ADMIN_UID=...
-FIREBASE_PROJECT_ID=...
-FIREBASE_PRIVATE_KEY=...
-FIREBASE_CLIENT_EMAIL=...
-FIREBASE_STORAGE_BUCKET=...
-NEXT_PUBLIC_SITE_VISIBILITY=...  # public: 全体公開, private: ログインユーザのみに公開
-```
+`.env.example` をもとに、`.env` ファイルを作成。
 
-**Firestore Database のルール（仮設定）**
+**Firestore Database のルールを仮設定**
 
 ```
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isAdmin() {
-      return request.auth != null && request.auth.token.admin == true;
-    }
-
     match /posts/{postId} {
       allow read;
-      allow write: if isAdmin();
+      allow write: if false;
     }
   }
 }
 ```
 
-**Storage のルール**
+**Storage のルールを仮設定**
 
 ```
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    function isAdmin() {
-      return request.auth != null && request.auth.token.admin == true;
-    }
-
     match /{allPaths=**} {
-      allow read: if false;
-      allow write: if isAdmin();
+      allow read;
+      allow write: if false;
     }
   }
 }
@@ -115,7 +91,7 @@ service firebase.storage {
     }
 
     match /{allPaths=**} {
-      allow read;
+      allow read: if false;
       allow write: if isAdmin();
     }
   }
@@ -137,3 +113,4 @@ Firebase Console > Firestore Database > インデックス より、複合イン
 **本番環境のために**
 
 - Firebase Console > Authentification > 設定 > 承認済みドメイン でサイトのドメインを追加
+- Authentification > 設定 > ユーザー アクション で「作成（登録）を許可する」をチェックアウトすることで、ユーザ登録を制限

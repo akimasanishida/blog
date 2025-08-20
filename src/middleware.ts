@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
   // ログイン済みの場合、セッションクッキーの検証を行う
   if (isLoggedIn) {
     // セッションの検証
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/auth/verify`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/verify`, {
       headers: {
         Cookie: `session=${session}`,
       },
