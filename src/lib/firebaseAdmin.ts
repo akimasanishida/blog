@@ -1,23 +1,46 @@
-import admin from 'firebase-admin'
-import { getAuth } from 'firebase-admin/auth'
-import { getFirestore } from 'firebase-admin/firestore'
-import 'server-only'
+import admin from "firebase-admin";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
+import "server-only";
+import { AsyncResult } from "@/types/result";
+import appConfig from "./appConfig";
 
 // Firebase Adminの設定
 const adminConfig = {
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-}
+  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+};
 
 // Firebase Adminの初期化
 const app = !admin.apps.length
   ? admin.initializeApp({
       credential: admin.credential.cert(adminConfig),
     })
-  : admin.app()
+  : admin.app();
 
-const adminAuth = getAuth(app)
-const adminDb = getFirestore(app)
+const adminAuth = getAuth(app);
+const adminDb = getFirestore(app);
 
-export { adminAuth, adminDb }
+export { adminAuth, adminDb };
+
+/**
+ * 新しいユーザーを追加する
+ * @param email ユーザーのメールアドレス
+ * @param password ユーザーのパスワード
+ * @returns AsyncResult
+ */
+export async function addNewUser(email: string): Promise<AsyncResult> {
+  return adminAuth
+    .createUser({
+      email: email,
+      emailVerified: false,
+      disabled: false,
+    })
+    .then((): AsyncResult => {
+      return { success: true };
+    })
+    .catch((error): AsyncResult => {
+      return { success: false, error: error.message };
+    });
+}
