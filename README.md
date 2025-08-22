@@ -110,6 +110,12 @@ Firebase Console > Firestore Database > インデックス より、複合イン
   - `publishDate` (クエリに合わせて 降順 Descending)
 - クエリのスコープ: コレクション (Collection)
 
+**メール送信設定（任意）**
+
+招待・パスワードリセット時に送られる、パスワード設定用のメールをカスタマイズすることができます。
+Authentication > テンプレート > パスワードの再設定 より、送信元アドレス・本文・アクション URL（パスワードリセットを行うURL）などを設定できます。
+アクション URL については、デフォルトでは Firebase が用意したページですが、あなたのドメイン + `set-password`（例：`https://example.com/set-password`）に変更することで、本ブログサイトが用意するページにすることができます。
+
 **本番環境のために**
 
 - Firebase Console > Authentification > 設定 > 承認済みドメイン でサイトのドメインを追加
