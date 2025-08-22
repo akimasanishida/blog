@@ -41,28 +41,22 @@ app/
 ├── layout.tsx
 ├── page.tsx              # トップページ
 ├── posts/
-│   └── [slug]/
-│       └── page.tsx      # 記事詳細
+│   └── [slug]/           # 記事詳細
 ├── archives/
-│   └── [year]/
-│       └── page.tsx      # 年別アーカイブ
-│       └── [month]/
-│           └── page.tsx  # 月別アーカイブ
+│   └── [year]/           # 年別アーカイブ
+│       └── [month]/      # 月別アーカイブ
 ├── categories/
-│   └── [category]/
-│       └── page.tsx      # カテゴリー別記事
-├── search/
-│   └── page.tsx          # 検索結果ページ
-├── about/
-│   └── page.tsx          # Aboutページ
-├── admin/
-│   └── page.tsx          # 管理画面
-        └── post/
-        │   └── page.tsx  # 記事投稿・編集画面
-        │       └── preview/
-        │           └── page.tsx  # 投稿のプレビュー
-        └── images/
-            └── page.tsx  # 画像一覧（投稿・削除画面）
+│   └── [category]/       # カテゴリー別記事
+├── forget-password/      # パスワードを忘れた際のメール送信
+├── login/                # ログインページ
+├── search/               # 検索結果ページ
+├── set-password/         # パスワードを設定（ToDo）
+├── about/                # Aboutページ
+└── admin/                # 管理画面
+    └── post/             # 記事投稿・編集画面
+    │   └── preview/      # 投稿のプレビュー
+    ├── images/           # 画像一覧（投稿・削除画面）
+    └── users/            # ユーザ管理
 ```
 
 **ブログ投稿**

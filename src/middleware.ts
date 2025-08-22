@@ -3,7 +3,8 @@ import { NextResponse } from 'next/server'
 
 export async function middleware(request: NextRequest) {
   const session = request.cookies.get('session')?.value
-  const isPublicPage = request.nextUrl.pathname === '/login'
+  const listPublicPage = ['/login', '/forget-password', '/forget-password/sent-email', "/set-password"]
+  const isPublicPage = listPublicPage.includes(request.nextUrl.pathname)
   const isPrivatePage = !isPublicPage
   const isLoggedIn = session
   // Edge Runtime では fs モジュールが使用できないため、環境変数を使用
