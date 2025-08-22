@@ -3,7 +3,6 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import "server-only";
 import { AsyncResult } from "@/types/result";
-import appConfig from "./appConfig";
 
 // Firebase Adminの設定
 const adminConfig = {

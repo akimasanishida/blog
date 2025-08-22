@@ -11,6 +11,7 @@ import {
   UserCredential,
 } from "firebase/auth";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { actionsCreateSessionCookie } from "@/app/actions/create-session-cookie";
 
@@ -32,13 +33,6 @@ export default function LoginForm() {
       const idToken = await userCredential.user.getIdToken();
       const idTokenResult = await userCredential.user.getIdTokenResult();
       const isAdmin = !!idTokenResult.claims.admin || false;
-
-      // if (!isAdmin) {
-      //   return {
-      //     success: false,
-      //     error: "管理者権限がありません",
-      //   };
-      // }
 
       const response = await actionsCreateSessionCookie(idToken); // Server Actionsで行う
       if (!response.success) {
@@ -83,7 +77,6 @@ export default function LoginForm() {
       } else {
         setError("ログインに失敗しました。もう一度お試しください。");
       }
-    } finally {
       setLoading(false);
     }
   };
@@ -115,7 +108,6 @@ export default function LoginForm() {
       } else {
         setError("GitHubでのログインに失敗しました。もう一度お試しください。");
       }
-    } finally {
       setLoading(false);
     }
   };
@@ -158,12 +150,21 @@ export default function LoginForm() {
         </div>
         <Button
           onClick={() => handleLoginEmail(email, password)}
-          className="w-full mt-2"
+          className="w-full my-2"
           disabled={loading}
         >
           {loading ? "ログイン中..." : "ログイン"}
         </Button>
-        <hr className="my-6" />
+        {/* Forgot password link */}
+        <div className="text-center">
+          <Link
+            href="/forget-password"
+            className="text-xs hover:underline" // text-sm よりさらに小さく
+          >
+            パスワードをお忘れですか？
+          </Link>
+        </div>
+        <hr className="my-4" />
         {/* GitHub login */}
         <Button
           onClick={handleLoginGitHub}
