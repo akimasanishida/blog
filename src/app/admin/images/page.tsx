@@ -158,6 +158,7 @@ function AdminImagesPage() {
             {images.map((image) => (
               <div key={image.refPath} className="relative group border rounded-lg overflow-hidden shadow-sm">
                 <Image
+                  unoptimized
                   src={image.url}
                   alt={image.name}
                   width={200}

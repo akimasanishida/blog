@@ -35,6 +35,7 @@ const ImageDetailOverlay: React.FC<ImageDetailOverlayProps> = ({
         <p className="mb-4 text-sm text-foreground break-all">{image.name}</p>
         <div className="mb-6 rounded-md overflow-hidden border border-border">
           <Image
+            unoptimized
             src={image.url}
             alt={image.name}
             width={400}

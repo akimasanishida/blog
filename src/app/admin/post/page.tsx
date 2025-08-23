@@ -556,6 +556,7 @@ function AdminPostPage() {
                       title={`「${img.name}」を選択`}
                     >
                       <Image
+                        unoptimized
                         src={img.url}
                         alt={img.name}
                         width={200}
