@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,7 +50,6 @@ function sortPosts(
 }
 
 function AdminPage() {
-  const router = useRouter();
   const [posts, setPosts] = useState<PostWithId[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
