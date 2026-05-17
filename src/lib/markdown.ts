@@ -37,7 +37,7 @@ export const renderMarkdownToHTML = async (markdownContent: string): Promise<str
         className: ['anchor'], // Optional: class for styling the link
       },
     })
-    .use(rehypeStringify);                // Convert HTML AST to string
+    .use(rehypeStringify, { allowDangerousHtml: true }); // Convert HTML AST to string
 
   const result = await processor.process(convertedContent);
   const contentHtml = result.toString();
