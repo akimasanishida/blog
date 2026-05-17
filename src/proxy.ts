@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const session = request.cookies.get('session')?.value
   const listPublicPage = ['/login', '/forget-password', '/forget-password/sent-email', "/set-password"]
   const isPublicPage = listPublicPage.includes(request.nextUrl.pathname)
